@@ -1,10 +1,13 @@
-from flask import render_template, flash, redirect, session, url_for, request, g
+from flask import render_template, flash, redirect, session, url_for, request, g, json
 from flask_login import current_user, login_user, logout_user, login_required
-from .login import LoginForm
 
-from dash import app, db
+from dash import app, db, db1
 from dash.models import User
 from dash.pwutils import hash_password, verify_password
+from dash.db_functions import Dbase
+
+from .login import LoginForm
+
 
 @app.route('/')
 @app.route('/index')
@@ -40,6 +43,34 @@ def user_logout():
 @app.route('/dashboard')
 @login_required
 def show_dashboard():
-    return render_template('home.html')
-
+    cursor = db1.cursor()
+    
+    # get all the locations
+    q1 = """
+    select 
+        location_district as id, location_district as text, "-1" as parentid 
+    from farmer 
+    where extension_personnel_id not in(13,2) and project like '%s' and project not like "%s" 
+        and location_district is not null and location_district != ""
+    group by location_district 
+    order by project, location_district
+    """
+    query = q1 % ('eadd%', '%test%')
+    cursor.execute(query)
+    res = cursor.fetchall()
+    
+    # get all the farmers
+    q2 = """
+    select 
+        id as id, name as text, location_district as parentid 
+    from farmer 
+    where location_district is not null and location_district != "" and project not like "%test%" 
+        and extension_personnel_id not in (13,2)  and project like "eadd%"
+    order by name
+    """
+    cursor.execute(q2)
+    res1 = cursor.fetchall()
+    res = res + res1
+    
+    return render_template('home.html', allfarmers = json.dumps(res))
 

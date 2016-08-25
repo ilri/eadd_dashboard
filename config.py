@@ -5,3 +5,4 @@ DBHOST = 'localhost'
 DBNAME = 'azizi_eadd_np'
 DBUSERNAME = 'root'
 DBPASSWORD = 'admin'
+DBPORT = 3306

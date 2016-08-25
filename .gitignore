@@ -3,3 +3,5 @@ tmp
 flask
 .pydevproject
 __pycache__
+bower
+static

@@ -1,4 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Home Page</h1>
+<link rel="stylesheet" href="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/styles/jqx.base.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/ngombeplanner.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='bower/bootstrap/dist/css/bootstrap.min.css') }}" type="text/css" />
+<script type=text/javascript>
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+</script>
+<script type="text/javascript" src="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/jqxcore.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/jqxdata.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/jqxbuttons.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/jqxscrollbar.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/jqxpanel.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/jqxtree.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/jqxmenu.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/ngombeplanner.js') }}"></script>
+<script type='text/javascript'>
+    NppDash.data = {};
+    NppDash.data.allFarmers = {{ allfarmers | safe }};
+    $(document).ready(function(){
+        npp.initiateFarmersTree();        
+    });
+    
+</script>
+
+<div id="summary">
+  <div id="tree_panel"></div>
+  <div id='details_panel'></div>
+</div>
+
+<div id='context_menu'>
+    <ul>
+        <li>Edit</li>
+        <li>Deactivate</li>
+    </ul>
+</div>
 {% endblock %}

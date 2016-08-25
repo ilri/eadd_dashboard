@@ -1,0 +1,29 @@
+{
+  "name": "eadd_web_dashboard",
+  "version": "1.0",
+  "authors": [
+    "Absolomon Kihara <soloincc@gmail.com>"
+  ],
+  "description": "EADD Ngombe Planner administration dashboard",
+  "main": "ran.py",
+  "keywords": [
+    "EADD",
+    "ILRI",
+    "Dashboard",
+    "Ngombe Planner"
+  ],
+  "license": "GPLv3",
+  "homepage": "http://np.azizi.ilri.org/",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "*",
+    "bootstrap": "*",
+    "jqwidgets": "*"
+  }
+}
