@@ -1,0 +1,3 @@
+body { margin: 0;   padding: 0; font-family: 'Open Sans', "Lucida Grande", arial, helvetica, verdana, sans-serif; color: #000000; min-width: 300px; }
+#tree_panel{ border: none !important; }
+#details_panel{ width: 78%; max-width: 950px; }

@@ -4,4 +4,4 @@ flask
 .pydevproject
 __pycache__
 bower
-static
+bower
