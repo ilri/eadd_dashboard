@@ -1,20 +1,18 @@
-import os
-import sys
-
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
 from dash import app
 import datetime
-from flask import Flask, jsonify, json
-from pprint import pprint
+from flask import json
 
 Base = declarative_base()
-engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'], echo = True)
-metadata = MetaData(bind = engine)
+engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'], echo=True)
+metadata = MetaData(bind=engine)
+
 
 def now():
     """ Get the current date/time """
     return datetime.datetime.now()
+
 
 class BaseClass():
     def to_json(inst, cls):
@@ -23,7 +21,7 @@ class BaseClass():
         """
         print("still doing this...")
         convert = dict()
-        # add your coversions for things like datetime's 
+        # add your coversions for things like datetime's
         # and what-not that aren't serializable.
         d = dict()
         for c in cls.__table__.columns:
@@ -41,16 +39,17 @@ class BaseClass():
 
 
 class Farmer(Base, BaseClass):
-    __table__ = Table('farmer', metadata,  autoload = True)
-    
+    __table__ = Table('farmer', metadata, autoload=True)
+
     def jsonify_me(self):
         return self.to_json(self)
 
     def __repr__(self):
         return self.to_json(self)
 
+
 class ExtensionPersonnel(Base):
     __table__ = Table('extension_personnel', metadata, autoload=True)
-    
+
     def __repr__(self):
         return '<Extension Personnel %r>' % (self.name)

@@ -24,6 +24,7 @@
   "dependencies": {
     "jquery": "*",
     "bootstrap": "*",
-    "jqwidgets": "*"
+    "jqwidgets": "*",
+    "azizi-shared-libs": "https://github.com/ilri/azizi-shared-libs.git"
   }
 }

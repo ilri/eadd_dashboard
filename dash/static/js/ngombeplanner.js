@@ -70,6 +70,7 @@ NppDash.prototype.isRightClick = function(event) {
     return rightclick;
 };
 
+// Implement the right click when an item is clicked
 NppDash.prototype.implementRightClick = function(event){
     var item = $(event.args).text();
     var selectedItem = $('#tree_menu').jqxTree('selectedItem');
@@ -86,6 +87,26 @@ NppDash.prototype.implementRightClick = function(event){
             }
             break;
     }
+};
+
+NppDash.prototype.loadFarmerDetails = function(){
+    // create the places where we will load the farmer details
+    $('#details_panel').html("<div id='farmer'></div><div id='cows'></div>");
+    
+    // get the details of the farmer and the cows
+    $.ajax({
+        type:"POST", url:'mod_ajax.php?page=siteData&do=fetch', dataType:'json', data: {farmer_id: npp.curFarmer.id}, async: false,
+        error: npp.communicationError,
+        success: function(data){
+           if(data.error) {
+              Notification.show({create: true, hide: true, updateText: false, text: 'There was an error while communicating with the server', error:true});
+              return;
+           }
+           else{
+
+           }
+        }
+    });
 };
 
 var npp = new NppDash();
