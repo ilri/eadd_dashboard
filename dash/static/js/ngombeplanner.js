@@ -1,6 +1,7 @@
 function NppDash(){
     this.data = {};
     this.console = console;
+    this.currentView = undefined;
 }
 
 NppDash.prototype.initiateFarmersTree = function(){
@@ -31,32 +32,30 @@ NppDash.prototype.initiateFarmersTree = function(){
     
     var clickedItem = null;
     // open the context menu when the user presses the mouse right button.
-    $("#tree_panel li div").on('mousedown', function (event) {
+    $("#tree_panel ul li div").on('mousedown', function (event) {
         var target = $(event.target).parents('li:first')[0];
+        var item = $('#tree_panel').jqxTree('getItem', event.currentTarget.parentElement);
         var rightClick = npp.isRightClick(event);
         
-        if (rightClick) {
+        if (rightClick && item.parentId !== 0) {
+            console.log('We have a right click on a farmer node');
             var scrollTop = $(window).scrollTop();
             var scrollLeft = $(window).scrollLeft();
             contextMenu.jqxMenu('open', parseInt(event.clientX) + 5 + scrollLeft, parseInt(event.clientY) + 5 + scrollTop);
-            // return false;
+        }
+        else if(rightClick == false && item.parentId !== 0){
+            console.log('We have a left click on a farmer node');
+            npp.currentView = 'farmer_display';
+            npp.curFarmerId = item.id;
+            // npp.getFarmerData();
+        }
+        else if(rightClick == false && item.parentId == 0){
+            console.log('We have a left click on a hub node');
+            npp.currentView = 'hub_display';
+            npp.curSiteName = item.label;
+            // npp.getSiteData();
         }
         return false;
-    });
-    
-    $("#tree_panel li div").on('click', function (event) {
-        var item = $('#tree_panel').jqxTree('getItem', args.element);
-        if(item.parentId == 0){
-            console.log('We have a site');
-           // we have a site, so lets get the sites data
-           npp.curSiteName = item.label;
-           // npp.getSiteData();
-        }
-        else{
-            console.log('We have a farmer');
-           npp.curFarmerId = item.id;
-           // npp.getFarmerData();
-        }
     });
     
     $("#context_menu").on('itemclick', npp.implementRightClick);
@@ -73,26 +72,29 @@ NppDash.prototype.isRightClick = function(event) {
 // Implement the right click when an item is clicked
 NppDash.prototype.implementRightClick = function(event){
     var item = $(event.args).text();
-    var selectedItem = $('#tree_menu').jqxTree('selectedItem');
+    var selectedItem = $('#tree_panel').jqxTree('selectedItem');
     npp.console.log(item+' was clicked');
+    npp.console.log(npp.currentView);
+    console.log(this);
     switch (item) {
-        case "Add Item":
+        case "Edit":
+            npp.currentView = 'edit_farmer';
+            console.log('Editing farmer '+npp.curFarmerId);
             if (selectedItem !== null) {
-                $('#tree_menu').jqxTree('addTo', { label: 'Item' }, selectedItem.element);
+                $('#tree_panel').jqxTree('addTo', { label: 'Item' }, selectedItem.element);
             }
             break;
-        case "Remove Item":
+        case "Deactivate":
+            npp.currentView = 'edit_farmer';
+            console.log(this.currentView = 'Deactivate farmer '+npp.curFarmerId);
             if (selectedItem !== null) {
-                $('#tree_menu').jqxTree('removeItem', selectedItem.element);
+                $('#tree_panel').jqxTree('removeItem', selectedItem.element);
             }
             break;
     }
 };
 
 NppDash.prototype.loadFarmerDetails = function(){
-    // create the places where we will load the farmer details
-    $('#details_panel').html("<div id='farmer'></div><div id='cows'></div>");
-    
     // get the details of the farmer and the cows
     $.ajax({
         type:"POST", url:'mod_ajax.php?page=siteData&do=fetch', dataType:'json', data: {farmer_id: npp.curFarmer.id}, async: false,

@@ -19,7 +19,7 @@ dbport = app.config['DBPORT']
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://%s:%s@%s/%s' % (app.config['DBUSERNAME'], app.config['DBPASSWORD'], app.config['DBHOST'], app.config['DBNAME'])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
-db1 = MySQLdb.connect(host = dbhost, port = dbport, user = dbuser, passwd = dbpass, db = dbname, cursorclass=MySQLdb.cursors.DictCursor)
+db1 = MySQLdb.connect(host = dbhost, port=dbport, user=dbuser, passwd=dbpass, db=dbname, cursorclass=MySQLdb.cursors.DictCursor)
 
 login_manager = LoginManager(app)
 
