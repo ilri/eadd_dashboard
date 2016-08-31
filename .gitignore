@@ -4,5 +4,4 @@ flask
 .pydevproject
 __pycache__
 bower
-bower
 nb-configuration.xml
