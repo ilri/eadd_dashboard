@@ -75,13 +75,15 @@ NppDash.prototype.isRightClick = function(event) {
 // Implement the right click when an item is clicked
 NppDash.prototype.implementRightClick = function(event){
     var item = $(event.args).text();
-    var selectedItem = $('#tree_panel').jqxTree('selectedItem');
     npp.console.log(item+' was clicked');
     switch (item) {
         case "Edit":
-            npp.currentView = 'edit_farmer';
             console.log('Editing farmer '+npp.curFarmerId);
-            npp.farmerEditModule();
+            if(npp.currentView === undefined || npp.currentView !== 'edit_farmer'){
+               // load the farmer edit panel
+               $('#details_panel').load('/edit_farmer');
+               npp.currentView = 'edit_farmer';
+            }
             break;
         case "Deactivate":
             npp.currentView = 'deactivate_farmer';
@@ -93,10 +95,10 @@ NppDash.prototype.implementRightClick = function(event){
  * Load the farmer display interface for editing the farmers
  * @returns {undefined}
  */
-NppDash.prototype.farmerEditModule = function(){
-   $('#details').load('/edit_farmer');
+NppDash.prototype.editFarmer = function(){
+   // get the farmer particulars
    $.ajax({
-        type:"POST", url: $SCRIPT_ROOT + "/edit_farmer", contentType: "application/json; charset=utf-8", dataType:'json', data: {farmer_id: npp.curFarmerId},
+        type:"POST", url: $SCRIPT_ROOT + "/farmer_details", contentType: "application/json; charset=utf-8", dataType:'json', data: {farmer_id: npp.curFarmerId},
         error: npp.communicationError,
         success: function(data){
            if(data.error) {
@@ -104,7 +106,7 @@ NppDash.prototype.farmerEditModule = function(){
               return;
            }
            else{
-
+              npp.currentFarmer = data
            }
         }
     });
@@ -113,4 +115,6 @@ NppDash.prototype.farmerEditModule = function(){
 NppDash.prototype.farmerReport = function(){};
 
 NppDash.prototype.hubReport = function(){};
+
+
 var npp = new NppDash();

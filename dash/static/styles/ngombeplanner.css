@@ -1,3 +1,8 @@
 body { margin: 0;   padding: 0; font-family: 'Open Sans', "Lucida Grande", arial, helvetica, verdana, sans-serif; color: #000000; min-width: 300px; }
-#tree_panel{ border: none !important; }
-#details_panel{ width: 78%; max-width: 950px; }
+#tree_panel{ border: none !important; float: left; }
+#details_panel{ width: 78%; max-width: 950px; margin-left: 305px; }
+.left_panel, .right_panel{ width: 48%; border: 1px dotted black; margin: 5px; min-height: 230px; }
+.left_panel{float: left;}
+.right_panel{margin-left: 49%; }
+.form-inline .form-group{ width: 400px; margin: 3px 0px; }
+.buttons{ text-align: center; width: 98%; }

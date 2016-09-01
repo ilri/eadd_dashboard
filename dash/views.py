@@ -78,19 +78,19 @@ def show_dashboard():
 @login_required
 def farmer_details():
     cursor = db1.cursor()
-   # get the farmer id details
-   query = """
-   select
+    # get the farmer id details
+    query = """
+    select
       a.name as farmer_name, a.mobile_no, a.mobile_no2, a.location_district, a.hh_id, a.gps_longitude, a.gps_latitude, a.pref_locale as locale, b.name as cf
-   from farmer as a inner join extension_personnel as b on a.extension_personnel_id = b.id
-   where a.id = %d
-   """
-   cursor.execute(query % ($_POST['farmer_id']))
-   farmer = cursor.fetchone()
-   return json.dumps(farmer)
+    from farmer as a inner join extension_personnel as b on a.extension_personnel_id = b.id
+    where a.id = %d
+    """
+    cursor.execute(query % (request.form['farmer_id']))
+    farmer = cursor.fetchone()
+    return json.dumps(farmer)
 
 
-@app.route('/edit_farmer', methods=['POST'])
+@app.route('/edit_farmer', methods=['GET'])
 @login_required
 def edit_farmer():
-   return render_template('farmer_edit.html', farmer = curFarmer)
+   return render_template('farmer_edit.html')
