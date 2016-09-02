@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>EADD Ngombe Planner Dashboard</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='bower/bootstrap/dist/css/bootstrap.min.css') }}" />
     <script type='text/javascript' src="{{ url_for('static', filename='bower/jquery/dist/jquery.min.js') }}"></script>
     <script type='text/javascript' src="{{ url_for('static', filename='bower/bootstrap/dist/js/bootstrap.min.js') }}"></script>

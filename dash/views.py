@@ -78,16 +78,28 @@ def show_dashboard():
 @login_required
 def farmer_details():
     cursor = db1.cursor()
+    form_data = request.get_json()
+    farmer_id = int(form_data['farmer_id'])
     # get the farmer id details
     query = """
     select
-      a.name as farmer_name, a.mobile_no, a.mobile_no2, a.location_district, a.hh_id, a.gps_longitude, a.gps_latitude, a.pref_locale as locale, b.name as cf
+      a.id as farmer_id, a.name as farmer_name, a.mobile_no, a.mobile_no2, a.location_district as hub, a.hh_id, a.gps_longitude, a.gps_latitude, a.pref_locale as locale, b.name as cf, if(is_active = 1, 'Yes', 'No') as is_active
     from farmer as a inner join extension_personnel as b on a.extension_personnel_id = b.id
     where a.id = %d
     """
-    cursor.execute(query % (request.form['farmer_id']))
+    cursor.execute(query % (farmer_id))
     farmer = cursor.fetchone()
-    return json.dumps(farmer)
+
+    #now get the cows belonging to this farmer
+    query = """
+    select
+      id as cow_id, name as cow_name, ear_tag_number as ear_tag, date_of_birth as dob, sex, breed_group, sire_id, dam_id, milking_status as is_milking, if(in_calf=1,'Yes','No') as is_incalf, parity, if(farmer_id = 0, 0, 1) as is_active
+    from cow
+    where farmer_id = %d or old_farmer_id = %d
+    """
+    cursor.execute(query % (farmer_id, farmer_id))
+    cows = cursor.fetchall()
+    return json.jsonify({'farmer': farmer, 'animals': cows})
 
 
 @app.route('/edit_farmer', methods=['GET'])

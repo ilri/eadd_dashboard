@@ -1,12 +1,14 @@
 import MySQLdb
 import MySQLdb.cursors
-from flask_sqlalchemy import SQLAlchemy
-
 from flask import Flask
 from flask_login import LoginManager
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CsrfProtect
 
 # Define the app object and load the config from file
+csrf = CsrfProtect()
 app = Flask(__name__, static_folder='static')
+csrf.init_app(app)
 
 # Read database settings from the configuration file
 app.config.from_object('config')

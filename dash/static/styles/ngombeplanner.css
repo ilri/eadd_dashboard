@@ -6,3 +6,4 @@ body { margin: 0;   padding: 0; font-family: 'Open Sans', "Lucida Grande", arial
 .right_panel{margin-left: 49%; }
 .form-inline .form-group{ width: 400px; margin: 3px 0px; }
 .buttons{ text-align: center; width: 98%; }
+.hidden{ display: none; }

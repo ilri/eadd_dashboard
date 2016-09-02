@@ -2,6 +2,16 @@ function NppDash(){
     this.data = {};
     this.console = console;
     this.currentView = undefined;
+    this.csrftoken = $('meta[name=csrf-token]').attr('content');
+    console.log('set csrf-token: '+ this.csrftoken)
+
+    $.ajaxSetup({
+      beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+            xhr.setRequestHeader("X-CSRFToken", npp.csrftoken)
+        }
+      }
+   });
 }
 
 NppDash.prototype.initiateFarmersTree = function(){
@@ -84,6 +94,7 @@ NppDash.prototype.implementRightClick = function(event){
                $('#details_panel').load('/edit_farmer');
                npp.currentView = 'edit_farmer';
             }
+            npp.editFarmer();
             break;
         case "Deactivate":
             npp.currentView = 'deactivate_farmer';
@@ -97,8 +108,9 @@ NppDash.prototype.implementRightClick = function(event){
  */
 NppDash.prototype.editFarmer = function(){
    // get the farmer particulars
-   $.ajax({
-        type:"POST", url: $SCRIPT_ROOT + "/farmer_details", contentType: "application/json; charset=utf-8", dataType:'json', data: {farmer_id: npp.curFarmerId},
+   var data = {farmer_id: npp.curFarmerId};
+   var request = $.ajax({
+        type:"POST", url: $SCRIPT_ROOT + "/farmer_details", contentType: "application/json", dataType:'json', data: JSON.stringify(data),
         error: npp.communicationError,
         success: function(data){
            if(data.error) {
@@ -106,15 +118,134 @@ NppDash.prototype.editFarmer = function(){
               return;
            }
            else{
-              npp.currentFarmer = data
+              npp.currentFarmer = data;
+              npp.initiateFarmerGrid();
            }
         }
     });
+};
+
+/**
+ * Ready the edit panel as well as the jqx table
+ * @returns {undefined}
+ */
+NppDash.prototype.initiateFarmerGrid = function(){
+   // create the source for the grid
+   var source = {
+      datatype: 'json', datafields: [ {name: 'farmer_id'}, {name: 'farmer_name'}, {name: 'hub'}, {name: 'mobile_no'}, {name: 'cf'}, {name: 'locale'}, {name: 'is_active'}],
+         localdata: npp.currentFarmer.farmer
+     };
+     var animalsAdapter = new $.jqx.dataAdapter(source);
+   // initialize jqxGrid
+     if($('#farmer_details :regex(class, jqx\-grid)').length === 0){
+        $("#farmer_details").jqxGrid({
+            width: 950,
+            height: 230,
+            source: source,
+            columnsresize: true,
+            altrows: true,
+            touchmode: false,
+            rowdetails: true,
+            initrowdetails: npp.initiateCowDetails,
+            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px 5px;'></div>", rowdetailsheight: 150, rowdetailshidden: false},
+            columns: [
+              { datafield: 'farmer_id', hidden: true },
+              { text: 'Name', datafield: 'farmer_name', width: 135, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                    return '<a href="javascript:;" id="'+ rowdata.id +'" class="farmer_id_href">&nbsp;'+ value +'</a>';
+                 }
+              },
+              { text: 'Hub', datafield: 'hub', width: 110 },
+              { text: 'Mobile No', datafield: 'mobile_no', width: 100 },
+              { text: 'Alternative No', datafield: 'mobile_no2', width: 100 },
+              { text: 'CF', datafield: 'cf', width: 140 },
+              { text: 'Language', datafield: 'locale', width: 80 },
+              { text: 'Is Active', datafield: 'is_active', width: 80 },
+               { text: 'Actions', datafield: 'actions', width: 170, cellsalign: 'center',
+                 cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                    return '<button id="edit_farmer_'+ rowdata.farmer_id +'" class="editing_farmer btn btn-success btn-xs">&nbsp;Edit</button>\
+                    <buttin id="deactivate_farmer_'+ rowdata.farmer_id +'" class="deact_farmer btn btn-danger btn-xs">&nbsp;Deactivate</button>';
+                 }
+               }
+            ]
+        });
+     }
+     else{
+        $("#farmer_details").jqxGrid({source: animalsAdapter});
+     }
+
+
+   // $('.editing_farmer').on('click', this.startFarmerEditing );
+   $('.editing_farmer').on('click', npp.startFarmerEditing );
+   $('.editing_cow').on('click', npp.startCowEditing );
+};
+
+NppDash.prototype.initiateCowDetails = function(index, parentElement, gridElement, dr){
+   var grid = $($(parentElement).children()[0]);
+
+   var eventsSource = {
+       datatype: "json", datafields: [ {name: 'cow_id'}, {name: 'cow_name'}, {name: 'ear_tag'}, {name: 'sex'}, {name: 'dob'}, {name: 'breed_group'}, {name: 'is_milking'}, {name: 'is_incalf'}, {name: 'parity'} ], type: 'POST',
+       localdata: npp.currentFarmer.animals
+    };
+
+    if (grid !== null) {
+      grid.jqxGrid({
+         source: eventsSource,
+         theme: '',
+         width: 860,
+         height: 170,
+         columnsresize: true,
+      columns: [
+         {datafield: 'cow_id', hidden: true},
+         {text: 'Name', datafield: 'cow_name', width: 100},
+         {text: 'Ear Tag', datafield: 'ear_tag', hidden: true},
+         {text: 'Sex', datafield: 'sex', width: 70},
+         {text: 'DoB', datafield: 'dob', width: 100},
+         {text: 'Breed Group', datafield: 'breed_group', width: 130},
+         {text: 'Is Milking', datafield: 'is_milking', width: 140},
+         {text: 'In Calf', datafield: 'is_incalf', width: 70},
+         {text: 'Parity', datafield: 'parity', width: 60},
+         { text: 'Actions', datafield: 'actions', width: 170, cellsalign: 'center',
+           cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+              return '<button id="edit_cow_'+ rowdata.cow_id +'" class="editing_cow btn btn-success btn-xs">&nbsp;Edit</button>\
+              <buttin id="deactivate_cow_'+ rowdata.cow_id +'" class="deact_cow btn btn-danger btn-xs">&nbsp;Deactivate</button>';
+           }
+         }
+      ]
+      });
+   }
 };
 
 NppDash.prototype.farmerReport = function(){};
 
 NppDash.prototype.hubReport = function(){};
 
+NppDash.prototype.startFarmerEditing = function(){
+   // update the fields with the current farmer details
+   console.log('Starting to edit the farmer...');
+   $('#edit_farmer').removeClass('hidden');
+};
+
+NppDash.prototype.startCowEditing = function(){
+   // update the fields with the cow details
+   console.log('Starting to edit the cow...');
+   $('#edit_cow').removeClass('hidden');
+};
+
 
 var npp = new NppDash();
+
+/**
+ * A jQuery addition to add Regex selection capacity
+ */
+jQuery.expr[':'].regex = function(elem, index, match) {
+    var matchParams = match[3].split(','),
+        validLabels = /^(data|css):/,
+        attr = {
+            method: matchParams[0].match(validLabels) ?
+                        matchParams[0].split(':')[0] : 'attr',
+            property: matchParams.shift().replace(validLabels,'')
+        },
+        regexFlags = 'ig',
+        regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g,''), regexFlags);
+    return regex.test(jQuery(elem)[attr.method](attr.property));
+}
