@@ -9,6 +9,9 @@ from dash.pwutils import verify_password
 
 from .login import LoginForm
 
+import sys
+
+last_error = {}
 
 @app.route('/')
 @app.route('/index')
@@ -47,16 +50,15 @@ def user_logout():
 def show_dashboard():
     cursor = db1.cursor()
     # get all the locations
-    q1 = """
+    query = """
     select
         location_district as id, location_district as text, "-1" as parentid
     from farmer
-    where extension_personnel_id not in(13,2) and project like '%s' and project not like "%s"
+    where extension_personnel_id not in(13,2) and project like 'eadd%' and project not like '%test%'
         and location_district is not null and location_district != ""
     group by location_district
     order by project, location_district
     """
-    query = q1 % ('eadd%', '%test%')
     cursor.execute(query)
     res = cursor.fetchall()
 
@@ -172,15 +174,75 @@ def all_hubs(criteria):
 @app.route('/save_farmer', methods=['POST'])
 @login_required
 def save_farmer():
-    cursor = db1.cursor()
     form_data = request.get_json()
-    print('Received data from the form')
+
+    print('Validating the passed data for the farmer')
+    ret = validate_farmer(form_data)
+    if(ret == 1):
+        return last_error
+    print('Validation passed, now lets save the data')
+
+    print('Normalise the passed data')
+    form_data = normalise_farmer(form_data)
+    if(form_data == 0):
+        return json.jsonify({'error': True, 'msg': 'Error while executing the query'})
     print(form_data)
+    print('Normalisation passed')
+
+    # since we have the farmer_id, it means we have a new farmer, so update the farmer
+    update_farmer(form_data)
+    db1.commit()
+    print('Farmer updated.... ')
+    return json.jsonify({'error': False, 'msg': 'Farmer updated successfully'})
+
+
+def normalise_farmer(data):
+    cursor = db1.cursor()
+    """
+    Normalise the data passed from the user, by converting the options to FK, indices etc
+    """
+    # check that the locale is made up of 2 letters only
+    if(len(data['locale']) != 2):
+        query = "select prefix from locales where language = '%s'"
+        try:
+            cursor.execute(query % (data['locale']))
+            locale = cursor.fetchone()
+        except Exception as e:
+            print("\nError while running\n", query, "\nData:\n", data['locale'])
+            print(e)
+            # last_error = {'error': True, 'msg': e}
+            return 0
+        data['locale'] = locale['prefix']
+
+    # check that the cf is an integer
+    if not data['cf'].isdigit():
+        query = "select id from extension_personnel where name = '%s'"
+        # data['cf'] = 'Milka'
+        try:
+            cursor.execute(query % (data['cf']))
+            cf = cursor.fetchone()
+            print(cf)
+        except Exception as e:
+            print("\nError while running\n", query, "\nData:\n", data['cf'])
+            print(e)
+            # last_error = {'error': True, 'msg': 'Error while executing the query'}
+            return 0
+        data['cf'] = cf['id']
+
+    # normalise whether the farmer is active
+    if(data['is_active'].isalpha()):
+        data['is_active'] = 1 if data['is_active'] == 'yes' else 0
+
+    return data
+
+
+def validate_farmer(form_data):
     # define our constraints
     validator = Schema({
+        Required('farmer_id'): All(int, msg='Missing farmer id. Stop tampering with the system.'),
         Required('farmer_name'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
         Required('mobile_no'): All(Match('^25[456]\d{9}$', msg="Mobile should be like '254700123456'")),
-        'mobile_no1': All(Match('^25[456]\d{9}$', msg="Mobile should be like '254700123456'")),
+        'mobile_no1': Any(Match('^25[456]\d{9}$', msg="Mobile should be like '254700123456'"), ''),
         Required('cf'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
         Required('hub'): All(str, Length(min=3, max=20), msg='The hub name should have 3-20 characters'),
         Required('locale'): All(str, Length(min=2, max=20), msg='The language should have 2-20 characters'),
@@ -190,8 +252,8 @@ def save_farmer():
     })
 
     # format our data
-    print(form_data['farmer_name'])
     data = {
+        'farmer_id': int(form_data['farmer_id']),
         'farmer_name': str(form_data['farmer_name']),
         'mobile_no': form_data['mobile_no'],
         'mobile_no1': form_data['mobile_no1'],
@@ -202,5 +264,31 @@ def save_farmer():
         'gps_lon': form_data['gps_lon'],
         'is_active': form_data['is_active']
     }
-    validator(data)
-    print('Validation passed')
+    try:
+        validator(data)
+    except Invalid as e:
+        last_error = json.jsonify({'error': True, 'msg': e.msg})
+        return 1
+    return 0
+
+
+def update_farmer(data):
+    cursor = db1.cursor()
+    query = """
+        update farmer set
+            name ='%s', mobile_no = '%s', location_district = '%s', gps_longitude = '%s', gps_latitude = '%s',
+            extension_personnel_id = %d, pref_locale = '%s', is_active = %d, mobile_no2 = '%s'
+        where id = %d
+    """
+    vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lon'], data['gps_lat'],
+        int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], int(data['farmer_id']))
+
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        last_error = json.jsonify({'error': True, 'msg': 'Error while executing the query'})
+        return 1
+
+    return 0

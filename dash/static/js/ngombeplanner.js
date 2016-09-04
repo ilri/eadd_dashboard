@@ -309,16 +309,20 @@ NppDash.prototype.startFarmerEditing = function(){
         } else {
             console.log('All looks good... so create the ajax request');
             var data = $('#farmer_editing').serializeObject();
+            data.farmer_id = npp.curFarmerId;
 
             var request = $.ajax({
                 type: "POST", url: $SCRIPT_ROOT + "/save_farmer", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
                 error: npp.communicationError,
                 success: function (data) {
                     if (data.error) {
-                        Notification.show({create: true, hide: true, updateText: false, text: 'There was an error while communicating with the server', error: true});
+                        npp.showNotification(data.msg, 'error');
                         return;
                     } else {
+                        $('#farmer_editing').clearForm();
+                        $('#edit_farmer').addClass('hidden');
                         console.log('All saved successfully');
+                        npp.showNotification(data.msg, 'success');
                     }
                 }
             });
@@ -347,6 +351,29 @@ NppDash.prototype.fnFormatResult = function (value, searchString) {
 
 NppDash.prototype.confirmSelection = function () {
     console.log('Confirm the selection made...');
+};
+
+
+/**
+ * Show a notification on the page
+ *
+ * @param   message     The message to be shown
+ * @param   type        The type of message
+ */
+NppDash.prototype.showNotification = function(message, type, autoclose){
+   if(type === undefined) { type = 'error'; }
+   if(autoclose === undefined) { autoclose = true; }
+
+   $('#messageNotification div').html(message);
+   if($('#messageNotification').jqxNotification('width') === undefined){
+      $('#messageNotification').jqxNotification({
+         width: 350, position: 'top-right', opacity: 0.9,
+         autoOpen: false, animationOpenDelay: 800, autoClose: autoclose, template: type
+       });
+   }
+   else{ $('#messageNotification').jqxNotification({template: type}); }
+
+   $('#messageNotification').jqxNotification('open');
 };
 
 var npp = new NppDash();
