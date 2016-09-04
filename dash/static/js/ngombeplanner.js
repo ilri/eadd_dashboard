@@ -15,6 +15,32 @@ function NppDash(){
    });
 }
 
+/**
+ * Format the autocomplete suggestions
+ */
+NppDash.prototype.fnFormatResult = function (value, searchString) {
+    var pattern = '(' + searchString.replace(npp.reEscape, '\\$1') + ')';
+    return value.data.replace(new RegExp(pattern, 'gi'), '<strong>$1<\/strong>');
+};
+
+NppDash.prototype.confirmSelection = function () {
+    console.log('Confirm the selection made...');
+};
+
+/**
+ * Check whether we have a right click on a tree node
+ *
+ * @param   {event}     event   The event which occurred
+ * @returns {Boolean}   Returns true if it was a right click else it returns false
+ */
+NppDash.prototype.isRightClick = function(event) {
+    var rightclick;
+    if (!event) var event = window.event;
+    if (event.which) rightclick = (event.which == 3);
+    else if (event.button) rightclick = (event.button == 2);
+    return rightclick;
+};
+
 NppDash.prototype.initiateFarmersTree = function(){
     npp.console.log('Creating the farmers tree');
     // prepare the data
@@ -75,13 +101,6 @@ NppDash.prototype.initiateFarmersTree = function(){
     $("#context_menu").on('itemclick', npp.implementRightClick);
 };
 
-NppDash.prototype.isRightClick = function(event) {
-    var rightclick;
-    if (!event) var event = window.event;
-    if (event.which) rightclick = (event.which == 3);
-    else if (event.button) rightclick = (event.button == 2);
-    return rightclick;
-};
 
 /**
  * Implement the right click when an item is clicked
@@ -149,7 +168,7 @@ NppDash.prototype.initiateFarmerGrid = function () {
             touchmode: false,
             rowdetails: true,
             initrowdetails: npp.initiateCowDetails,
-            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px 5px;'></div>", rowdetailsheight: 150, rowdetailshidden: false},
+            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 5px;'></div>", rowdetailsheight: 150, rowdetailshidden: false},
             columns: [
                 {datafield: 'farmer_id', hidden: true},
                 {text: 'Name', datafield: 'farmer_name', width: 135, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
@@ -174,10 +193,7 @@ NppDash.prototype.initiateFarmerGrid = function () {
         $("#farmer_details").jqxGrid({source: animalsAdapter});
     }
 
-
-    // $('.editing_farmer').on('click', this.startFarmerEditing );
     $('.editing_farmer').on('click', npp.startFarmerEditing);
-    $('.editing_cow').on('click', npp.startCowEditing);
 };
 
 /**
@@ -187,7 +203,7 @@ NppDash.prototype.initiateCowDetails = function(index, parentElement, gridElemen
    var grid = $($(parentElement).children()[0]);
 
     var eventsSource = {
-        datatype: "json", datafields: [{name: 'cow_id'}, {name: 'cow_name'}, {name: 'ear_tag'}, {name: 'sex'}, {name: 'dob'}, {name: 'breed_group'}, {name: 'is_milking'}, {name: 'is_incalf'}, {name: 'parity'}], type: 'POST',
+        datatype: "json", datafields: [{name: 'cow_id'}, {name: 'cow_name'}, {name: 'ear_tag'}, {name: 'sex'}, {name: 'dob'}, {name: 'breed_group'}, {name: 'is_milking'}, {name: 'is_active'}, {name: 'is_incalf'}, {name: 'parity'}], type: 'POST',
         localdata: npp.currentFarmer.animals
     };
 
@@ -195,7 +211,7 @@ NppDash.prototype.initiateCowDetails = function(index, parentElement, gridElemen
         grid.jqxGrid({
             source: eventsSource,
             theme: '',
-            width: 860,
+            width: 890,
             height: 170,
             columnsresize: true,
             columns: [
@@ -205,18 +221,20 @@ NppDash.prototype.initiateCowDetails = function(index, parentElement, gridElemen
                 {text: 'Sex', datafield: 'sex', width: 70},
                 {text: 'DoB', datafield: 'dob', width: 100},
                 {text: 'Breed Group', datafield: 'breed_group', width: 130},
+                {text: 'Is Active', datafield: 'is_active', width: 80},
                 {text: 'Is Milking', datafield: 'is_milking', width: 140},
                 {text: 'In Calf', datafield: 'is_incalf', width: 70},
                 {text: 'Parity', datafield: 'parity', width: 60},
-                {text: 'Actions', datafield: 'actions', width: 170, cellsalign: 'center',
+                {text: 'Actions', datafield: 'actions', width: 130, cellsalign: 'center',
                     cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
-                        return '<button id="edit_cow_' + rowdata.cow_id + '" class="editing_cow btn btn-success btn-xs">&nbsp;Edit</button>\
-              <buttin id="deactivate_cow_' + rowdata.cow_id + '" class="deact_cow btn btn-danger btn-xs">&nbsp;Deactivate</button>';
+                        return '<button id="' + row + '" class="editing_cow btn btn-success btn-xs">&nbsp;Edit</button>\
+                        <buttin id="deactivate_cow_' + rowdata.cow_id + '" class="deact_cow btn btn-danger btn-xs">&nbsp;Deactivate</button>';
                     }
                 }
             ]
         });
     }
+    $('.editing_cow').on('click', npp.startCowEditing);
 };
 
 NppDash.prototype.farmerReport = function(){};
@@ -226,35 +244,25 @@ NppDash.prototype.hubReport = function(){};
 /**
  * Configure the autocomplete fields
  */
-NppDash.prototype.configureEditAutocomplete = function () {
-    var autocomplete_fields = [
-        {field: 'cf', sub_module: 'all_cfs'},
-        {field: 'hub', sub_module: 'all_hubs'},
-        {field: 'locale', sub_module: 'all_locale'}
-    ];
+NppDash.prototype.configureEditAutocomplete = function (module) {
+    var autocomplete_fields = [];
+    if(module === 'farmer'){
+        autocomplete_fields = [
+            {field: 'cf', sub_module: 'all_cfs'},
+            {field: 'hub', sub_module: 'all_hubs'},
+            {field: 'locale', sub_module: 'all_locale'}
+        ];
+    }
+    else if(module === 'cow'){
+        autocomplete_fields = [
+            {field: 'breed_group', sub_module: 'all_breeds'},
+            {field: 'milking_status', sub_module: 'milking_statuses'}
+        ];
+    }
 
     $.each(autocomplete_fields, function () {
         npp.initiateAutocomplete(this.field, this.sub_module)
     });
-};
-
-NppDash.prototype.validateFarmer = function () {
-    var e = {};
-    e.farmer_name = $('#farmer_name').val();
-    e.hub = $('#hub').val();
-    e.mobile_no = $('#mobile_no').val();
-    e.mobile_no1 = $('#mobile_no1').val();
-    e.cf = $('#cf').val();
-    e.locale = $('#locale').val();
-    e.lat = $('#gps_lat').val();
-    e.lon = $('#gps_lon').val();
-    e.is_active = $('[name=is_active]').val();
-
-    npp.curFarmer.edits = e;
-};
-
-NppDash.prototype.saveFarmer = function(){
-
 };
 
 /**
@@ -301,8 +309,9 @@ NppDash.prototype.startFarmerEditing = function(){
        $('#is_active_no').prop('checked', true);
    }
    $('#edit_farmer').removeClass('hidden');
-   npp.configureEditAutocomplete();
+   npp.configureEditAutocomplete('farmer');
 
+    // validate and save the entered data when the user clicks on submit
     $('#farmer_editing').validator().on('submit', function (e) {
         if (e.isDefaultPrevented()) {
             console.log('We have an invalid form');
@@ -337,20 +346,71 @@ NppDash.prototype.startFarmerEditing = function(){
 NppDash.prototype.startCowEditing = function () {
     // update the fields with the cow details
     console.log('Starting to edit the cow...');
-    $('#').val();
+    var cow = $('#grid0').jqxGrid('getrowdata', this.id);
+    $('#cow_name').val(cow.cow_name);
+    $('#ear_tag').val(cow.ear_tag);
+    $('#dob').val(cow.dob);
+    $('#breed_group').val(cow.breed_group);
+    $('#sire').val(cow.sire);
+    $('#dam').val(cow.dam);
+    if (cow.is_active === 'Yes'){
+        $('#active_cow_yes').prop('checked', true);
+    }
+    else if (cow.is_active === 'No'){
+        $('#active_cow_no').prop('checked', true);
+    }
+
+    // gender related fields
+    if (cow.sex === 'Female'){
+        $('#female').prop('checked', true);
+        $('#parity').val(cow.parity);
+        $('#milking_status').val(cow.is_milking);
+        if (cow.is_incalf === 'Yes'){
+            $('#incalf_yes').prop('checked', true);
+        }
+        else if (cow.is_incalf === 'No'){
+            $('#incalf_no').prop('checked', true);
+        }
+    }
+    else if (cow.sex === 'Male'){
+        $('#male').prop('checked', true);
+        $('#parity').prop('disabled', true);
+        $('#milking_status').prop('disabled', true);
+        $('[name=is_incalf]').prop('disabled', true);
+    }
+
+    npp.currentCow = cow;
+
     $('#edit_cow').removeClass('hidden');
-};
+    npp.configureEditAutocomplete('cow');
 
-/**
- * Format the autocomplete suggestions
- */
-NppDash.prototype.fnFormatResult = function (value, searchString) {
-    var pattern = '(' + searchString.replace(npp.reEscape, '\\$1') + ')';
-    return value.data.replace(new RegExp(pattern, 'gi'), '<strong>$1<\/strong>');
-};
+    // validate and save the entered data when the user clicks on submit
+    $('#cow_editing').validator().on('submit', function (e) {
+        if (e.isDefaultPrevented()) {
+            console.log('We have an invalid form');
+        } else {
+            console.log('All looks good... so create the ajax request');
+            var data = $('#cow_editing').serializeObject();
+            data.cow_id = npp.currentCow.id;
 
-NppDash.prototype.confirmSelection = function () {
-    console.log('Confirm the selection made...');
+            var request = $.ajax({
+                type: "POST", url: $SCRIPT_ROOT + "/save_cow", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
+                error: npp.communicationError,
+                success: function (data) {
+                    if (data.error) {
+                        npp.showNotification(data.msg, 'error');
+                        return;
+                    } else {
+                        $('#cow_editing').clearForm();
+                        $('#edit_cow').addClass('hidden');
+                        console.log('All saved successfully');
+                        npp.showNotification(data.msg, 'success');
+                    }
+                }
+            });
+            return false;
+        }
+    });
 };
 
 

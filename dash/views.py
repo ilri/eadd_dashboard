@@ -97,7 +97,7 @@ def farmer_details():
     #now get the cows belonging to this farmer
     query = """
     select
-      id as cow_id, name as cow_name, ear_tag_number as ear_tag, date_of_birth as dob, sex, breed_group, sire_id, dam_id, milking_status as is_milking, if(in_calf=1,'Yes','No') as is_incalf, parity, if(farmer_id = 0, 0, 1) as is_active
+      id as cow_id, name as cow_name, ear_tag_number as ear_tag, date_of_birth as dob, sex, breed_group, sire_id, dam_id, milking_status as is_milking, if(in_calf=1,'Yes','No') as is_incalf, parity, if(farmer_id = 0, 'No', 'Yes') as is_active
     from cow
     where farmer_id = %d or old_farmer_id = %d
     """
@@ -124,6 +124,10 @@ def autocomplete_options():
         suggestions = all_locales(criteria)
     elif(option == 'all_hubs'):
         suggestions = all_hubs(criteria)
+    elif(option == 'all_breeds'):
+        suggestions = all_breeds(criteria)
+    elif(option == 'milking_statuses'):
+        suggestions = all_milking_statuses(criteria)
 
     to_return = {'query': criteria, 'suggestions': suggestions}
     return json.jsonify(to_return)
@@ -168,6 +172,34 @@ def all_hubs(criteria):
     suggestions = []
     for hub in hubs:
         suggestions.append({'data': hub['hub'], 'value': hub['hub']})
+    return suggestions
+
+
+def all_breeds(criteria):
+    cursor = db1.cursor()
+    query = """
+    select breed_group as breed from cow where breed_group like '%s' group by breed_group order by breed_group
+    """
+
+    cursor.execute(query % ('%' + criteria + '%'))
+    breeds = cursor.fetchall()
+    suggestions = []
+    for breed in breeds:
+        suggestions.append({'data': breed['breed'], 'value': breed['breed']})
+    return suggestions
+
+
+def all_milking_statuses(criteria):
+    cursor = db1.cursor()
+    query = """
+    select milking_status as milk_status from cow where milking_status like '%s' group by milking_status order by milking_status
+    """
+
+    cursor.execute(query % ('%' + criteria + '%'))
+    milk_statuses = cursor.fetchall()
+    suggestions = []
+    for milk_status in milk_statuses:
+        suggestions.append({'data': milk_status['milk_status'], 'value': milk_status['milk_status']})
     return suggestions
 
 

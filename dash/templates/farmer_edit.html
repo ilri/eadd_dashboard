@@ -74,10 +74,10 @@
 						<label class="col-md-6 control-label" for="is_active">Is Active&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
 						<div class="col-md-6">
 							<label class="radio-inline">
-                                <input type="radio" name="is_active" id="is_active_yes" value="yes"> Yes
+                                <input type="radio" name="is_active" id="is_active_yes" value="yes" required> Yes
                             </label>
 							<label class="radio-inline">
-                                <input type="radio" name="is_active" id="is_active_no" value="no"> No
+                                <input type="radio" name="is_active" id="is_active_no" value="no" required> No
                             </label>
 						</div>
                         <div class="help-block with-errors"></div>
@@ -91,7 +91,8 @@
 		</form>
 	</div>
 	<div id='edit_cow' class="hidden">
-		<form class='form-inline' role="form" id="cow_editing">
+		<form class='form-inline' role="form" id="cow_editing" method='POST' action='save_cow'>
+            {{form.hidden_tag()}} <!-- CSRF token -->
 			<fieldset id="cow">
 				<div class="left_panel">
 					<div class="form-group">
@@ -120,16 +121,21 @@
 
 					<div class="form-group">
 						<label class="col-md-6 control-label" for="sex">Sex&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
-						<div class="">
-							<label class="radio-inline"><input type="radio" name="sex" id="male" class='form-control' value="male"> Male</label>
-							<label class="radio-inline"><input type="radio" name="sex" id="female" class='form-control' value="female"> Female</label>
+						<div class="col-md-6">
+							<label class="radio-inline">
+                                <input type="radio" name="sex" id="male" value="male" required> Male
+                            </label>
+							<label class="radio-inline">
+                                <input type="radio" name="sex" id="female" value="female" required> Female
+                            </label>
 						</div>
                         <div class="help-block with-errors"></div>
 					</div>
 
 					<div class="form-group">
-						<label class="col-md-6 control-label" for="breed">Breed Group&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
-						<div class="breeds">
+						<label class="col-md-6 control-label" for="breed_group">Breed Group&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+                            <input type="text" required name='breed_group' id="breed_group" placeholder="Breed Group" class='input-medium form-control' />
 						</div>
                         <div class="help-block with-errors"></div>
 					</div>
@@ -145,9 +151,13 @@
 
 					<div class="form-group">
 						<label class="col-md-6 control-label" for="is_incalf">Is Incalf&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
-						<div class="">
-							<label class="radio-inline"><input type="radio" name="is_incalf" id="incalf_yes" class='form-control' value="yes"> Yes</label>
-							<label class="radio-inline"><input type="radio" name="is_incalf" id="incalf_no" class='form-control' value="no"> No</label>
+						<div class="col-md-6">
+							<label class="radio-inline">
+                                <input type="radio" name="is_incalf" id="incalf_yes" value="yes" required> Yes
+                            </label>
+							<label class="radio-inline">
+                                <input type="radio" name="is_incalf" id="incalf_no" value="no" required> No
+                            </label>
 						</div>
                         <div class="help-block with-errors"></div>
 					</div>
@@ -155,7 +165,7 @@
 					<div class="form-group">
 						<label class="col-md-6 control-label" for="sire">Parity&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
 						<div class="col-md-6">
-                            <input type="number" min="0" max="10" required name='parity' id="sire" placeholder="Parity" class='input-medium form-control' />
+                            <input type="number" min="0" max="10" required name='parity' id="parity" placeholder="No" class='input-medium form-control' />
 						</div>
                         <div class="help-block with-errors"></div>
 					</div>
@@ -179,8 +189,12 @@
 					<div class="form-group">
 						<label class="col-md-6 control-label" for="is_active">Is Active&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
 						<div class="col-md-6">
-							<label class="radio-inline"><input type="radio" name="is_active" id="yes" class='form-control' value="yes"> Yes</label>
-							<label class="radio-inline"><input type="radio" name="is_active" id="no" class='form-control' value="no"> No</label>
+							<label class="radio-inline">
+                                <input type="radio" name="is_active" id="active_cow_yes" value="yes" required> Yes
+                            </label>
+							<label class="radio-inline">
+                                <input type="radio" name="is_active" id="active_cow_no" value="no" required> No
+                            </label>
 						</div>
                         <div class="help-block with-errors"></div>
 					</div>
