@@ -10,7 +10,8 @@
     "EADD",
     "ILRI",
     "Dashboard",
-    "Ngombe Planner"
+    "Ngombe",
+    "Planner"
   ],
   "license": "GPLv3",
   "homepage": "http://np.azizi.ilri.org/",
@@ -19,12 +20,17 @@
     "node_modules",
     "bower_components",
     "test",
-    "tests"
+    "tests",
+    "dash/static/bower"
   ],
   "dependencies": {
     "jquery": "*",
     "bootstrap": "*",
     "jqwidgets": "*",
-    "azizi-shared-libs": "https://github.com/ilri/azizi-shared-libs.git"
-  }
+    "azizi-shared-libs": "https://github.com/ilri/azizi-shared-libs.git",
+    "jQuery-Autocomplete": "https://github.com/devbridge/jQuery-Autocomplete.git",
+    "bootstrap-validator": "^0.11.5",
+    "jquery-serialize-object": "^2.5.0"
+  },
+  "private": true
 }

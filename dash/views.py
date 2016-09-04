@@ -1,5 +1,7 @@
 from flask import render_template, redirect, url_for, request, json
 from flask_login import login_user, logout_user, login_required
+from flask_wtf import Form
+from voluptuous import Schema, Required, Invalid, All, Match, Length, Any
 
 from dash import app, db1
 from dash.models import User
@@ -105,4 +107,100 @@ def farmer_details():
 @app.route('/edit_farmer', methods=['GET'])
 @login_required
 def edit_farmer():
-   return render_template('farmer_edit.html')
+    return render_template('farmer_edit.html', form=Form())
+
+
+@app.route('/autocomplete', methods=['GET'])
+@login_required
+def autocomplete_options():
+    criteria = request.args.get('query')
+    option = request.args.get('resource')
+
+    if(option == 'all_cfs'):
+        suggestions = all_cfs(criteria)
+    elif(option == 'all_locale'):
+        suggestions = all_locales(criteria)
+    elif(option == 'all_hubs'):
+        suggestions = all_hubs(criteria)
+
+    to_return = {'query': criteria, 'suggestions': suggestions}
+    return json.jsonify(to_return)
+
+
+def all_cfs(criteria):
+    cursor = db1.cursor()
+    query = """
+    select id as cf_id, name from extension_personnel where name like '%s' order by name
+    """
+
+    cursor.execute(query % ('%' + criteria + '%'))
+    cfs = cursor.fetchall()
+    suggestions = []
+    for cf in cfs:
+        suggestions.append({'data': cf['name'], 'value': cf['name']})
+    return suggestions
+
+
+def all_locales(criteria):
+    cursor = db1.cursor()
+    query = """
+    select language from locales where prefix like '%s' or language like '%s' order by language
+    """
+
+    cursor.execute(query % ('%' + criteria + '%', '%' + criteria + '%'))
+    locales = cursor.fetchall()
+    suggestions = []
+    for loc in locales:
+        suggestions.append({'data': loc['language'], 'value': loc['language']})
+    return suggestions
+
+
+def all_hubs(criteria):
+    cursor = db1.cursor()
+    query = """
+    select location_district as hub from farmer where location_district like '%s' group by location_district order by location_district
+    """
+
+    cursor.execute(query % ('%' + criteria + '%'))
+    hubs = cursor.fetchall()
+    suggestions = []
+    for hub in hubs:
+        suggestions.append({'data': hub['hub'], 'value': hub['hub']})
+    return suggestions
+
+
+@app.route('/save_farmer', methods=['POST'])
+@login_required
+def save_farmer():
+    cursor = db1.cursor()
+    form_data = request.get_json()
+    print('Received data from the form')
+    print(form_data)
+    # define our constraints
+    validator = Schema({
+        Required('farmer_name'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
+        Required('mobile_no'): All(Match('^25[456]\d{9}$', msg="Mobile should be like '254700123456'")),
+        'mobile_no1': All(Match('^25[456]\d{9}$', msg="Mobile should be like '254700123456'")),
+        Required('cf'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
+        Required('hub'): All(str, Length(min=3, max=20), msg='The hub name should have 3-20 characters'),
+        Required('locale'): All(str, Length(min=2, max=20), msg='The language should have 2-20 characters'),
+        'gps_lat': All(Match('^\-?\d{1}\.\d{3,10}$'), msg='The GPS latitude should be like 0.89877878'),
+        'gps_lon': All(Match('^0?\d{2}\.\d{3,10}$'), msg='The GPS latitude should be like 36.89877878'),
+        Required('is_active'): All(str, Any('yes', 'no'), msg='Select whether the farmer is active or not')
+    })
+
+    # format our data
+    print(form_data['farmer_name'])
+    data = {
+        'farmer_name': str(form_data['farmer_name']),
+        'mobile_no': form_data['mobile_no'],
+        'mobile_no1': form_data['mobile_no1'],
+        'cf': form_data['cf'],
+        'hub': form_data['hub'],
+        'locale': form_data['locale'],
+        'gps_lat': form_data['gps_lat'],
+        'gps_lon': form_data['gps_lon'],
+        'is_active': form_data['is_active']
+    }
+    validator(data)
+    print('Validation passed')

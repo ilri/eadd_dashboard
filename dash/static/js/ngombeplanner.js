@@ -3,6 +3,7 @@ function NppDash(){
     this.console = console;
     this.currentView = undefined;
     this.csrftoken = $('meta[name=csrf-token]').attr('content');
+    this.reEscape = new RegExp('(\\' + ['/', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\'].join('|\\') + ')', 'g')
     console.log('set csrf-token: '+ this.csrftoken)
 
     $.ajaxSetup({
@@ -17,7 +18,7 @@ function NppDash(){
 NppDash.prototype.initiateFarmersTree = function(){
     npp.console.log('Creating the farmers tree');
     // prepare the data
-    var source = { datatype: "json", datafields: [ {name: 'id'}, {name: 'parentid'}, {name: 'text'} ], id: 'id', localdata: NppDash.data.allFarmers };
+    var source = {datatype: "json", datafields: [{name: 'id'}, {name: 'parentid'}, {name: 'text'}], id: 'id', localdata: NppDash.data.allFarmers};
 
     // create data adapter.
     var dataAdapter = new $.jqx.dataAdapter(source);
@@ -27,10 +28,10 @@ NppDash.prototype.initiateFarmersTree = function(){
     // the sub items collection name. Each jqxTree item has a 'label' property, but in the JSON data, we have a 'text' field. The last parameter
     // specifies the mapping between the 'text' and 'label' fields.
     var records = dataAdapter.getRecordsHierarchy('id', 'parentid', 'items', [{name: 'text', map: 'label'}]);
-    $('#tree_panel').jqxTree({source: records, width: '300px', theme: '', checkboxes: false });
+    $('#tree_panel').jqxTree({source: records, width: '300px', theme: '', checkboxes: false});
     npp.console.log('Farmers tree created');
     npp.console.log('Adding the context menu');
-    var contextMenu = $("#context_menu").jqxMenu({ width: '120px', theme: 'darkblue', height: '56px', autoOpenPopup: false, mode: 'popup' });
+    var contextMenu = $("#context_menu").jqxMenu({width: '120px', theme: 'darkblue', height: '56px', autoOpenPopup: false, mode: 'popup'});
 
     // disable right click when the user is on the tree
     $(document).bind('contextmenu', function (e) {
@@ -82,7 +83,9 @@ NppDash.prototype.isRightClick = function(event) {
     return rightclick;
 };
 
-// Implement the right click when an item is clicked
+/**
+ * Implement the right click when an item is clicked
+ */
 NppDash.prototype.implementRightClick = function(event){
     var item = $(event.args).text();
     npp.console.log(item+' was clicked');
@@ -108,19 +111,18 @@ NppDash.prototype.implementRightClick = function(event){
  */
 NppDash.prototype.editFarmer = function(){
    // get the farmer particulars
-   var data = {farmer_id: npp.curFarmerId};
-   var request = $.ajax({
-        type:"POST", url: $SCRIPT_ROOT + "/farmer_details", contentType: "application/json", dataType:'json', data: JSON.stringify(data),
+    var data = {farmer_id: npp.curFarmerId};
+    var request = $.ajax({
+        type: "POST", url: $SCRIPT_ROOT + "/farmer_details", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
         error: npp.communicationError,
-        success: function(data){
-           if(data.error) {
-              Notification.show({create: true, hide: true, updateText: false, text: 'There was an error while communicating with the server', error:true});
-              return;
-           }
-           else{
-              npp.currentFarmer = data;
-              npp.initiateFarmerGrid();
-           }
+        success: function (data) {
+            if (data.error) {
+                Notification.show({create: true, hide: true, updateText: false, text: 'There was an error while communicating with the server', error: true});
+                return;
+            } else {
+                npp.currentFarmer = data;
+                npp.initiateFarmerGrid();
+            }
         }
     });
 };
@@ -129,15 +131,15 @@ NppDash.prototype.editFarmer = function(){
  * Ready the edit panel as well as the jqx table
  * @returns {undefined}
  */
-NppDash.prototype.initiateFarmerGrid = function(){
-   // create the source for the grid
-   var source = {
-      datatype: 'json', datafields: [ {name: 'farmer_id'}, {name: 'farmer_name'}, {name: 'hub'}, {name: 'mobile_no'}, {name: 'cf'}, {name: 'locale'}, {name: 'is_active'}],
-         localdata: npp.currentFarmer.farmer
-     };
-     var animalsAdapter = new $.jqx.dataAdapter(source);
-   // initialize jqxGrid
-     if($('#farmer_details :regex(class, jqx\-grid)').length === 0){
+NppDash.prototype.initiateFarmerGrid = function () {
+    // create the source for the grid
+    var source = {
+        datatype: 'json', datafields: [{name: 'farmer_id'}, {name: 'farmer_name'}, {name: 'hub'}, {name: 'mobile_no'}, {name: 'cf'}, {name: 'locale'}, {name: 'is_active'}],
+        localdata: npp.currentFarmer.farmer
+    };
+    var animalsAdapter = new $.jqx.dataAdapter(source);
+    // initialize jqxGrid
+    if ($('#farmer_details :regex(class, jqx\-grid)').length === 0) {
         $("#farmer_details").jqxGrid({
             width: 950,
             height: 230,
@@ -149,103 +151,218 @@ NppDash.prototype.initiateFarmerGrid = function(){
             initrowdetails: npp.initiateCowDetails,
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px 5px;'></div>", rowdetailsheight: 150, rowdetailshidden: false},
             columns: [
-              { datafield: 'farmer_id', hidden: true },
-              { text: 'Name', datafield: 'farmer_name', width: 135, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
-                    return '<a href="javascript:;" id="'+ rowdata.id +'" class="farmer_id_href">&nbsp;'+ value +'</a>';
-                 }
-              },
-              { text: 'Hub', datafield: 'hub', width: 110 },
-              { text: 'Mobile No', datafield: 'mobile_no', width: 100 },
-              { text: 'Alternative No', datafield: 'mobile_no2', width: 100 },
-              { text: 'CF', datafield: 'cf', width: 140 },
-              { text: 'Language', datafield: 'locale', width: 80 },
-              { text: 'Is Active', datafield: 'is_active', width: 80 },
-               { text: 'Actions', datafield: 'actions', width: 170, cellsalign: 'center',
-                 cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
-                    return '<button id="edit_farmer_'+ rowdata.farmer_id +'" class="editing_farmer btn btn-success btn-xs">&nbsp;Edit</button>\
-                    <buttin id="deactivate_farmer_'+ rowdata.farmer_id +'" class="deact_farmer btn btn-danger btn-xs">&nbsp;Deactivate</button>';
-                 }
-               }
+                {datafield: 'farmer_id', hidden: true},
+                {text: 'Name', datafield: 'farmer_name', width: 135, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                        return '<a href="javascript:;" id="' + rowdata.id + '" class="farmer_id_href">&nbsp;' + value + '</a>';
+                    }
+                },
+                {text: 'Hub', datafield: 'hub', width: 110},
+                {text: 'Mobile No', datafield: 'mobile_no', width: 100},
+                {text: 'Alternative No', datafield: 'mobile_no2', width: 100},
+                {text: 'CF', datafield: 'cf', width: 140},
+                {text: 'Language', datafield: 'locale', width: 80},
+                {text: 'Is Active', datafield: 'is_active', width: 80},
+                {text: 'Actions', datafield: 'actions', width: 170, cellsalign: 'center',
+                    cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                        return '<button id="edit_farmer_' + rowdata.farmer_id + '" class="editing_farmer btn btn-success btn-xs">&nbsp;Edit</button>\
+                    <buttin id="deactivate_farmer_' + rowdata.farmer_id + '" class="deact_farmer btn btn-danger btn-xs">&nbsp;Deactivate</button>';
+                    }
+                }
             ]
         });
-     }
-     else{
+    } else {
         $("#farmer_details").jqxGrid({source: animalsAdapter});
-     }
+    }
 
 
-   // $('.editing_farmer').on('click', this.startFarmerEditing );
-   $('.editing_farmer').on('click', npp.startFarmerEditing );
-   $('.editing_cow').on('click', npp.startCowEditing );
+    // $('.editing_farmer').on('click', this.startFarmerEditing );
+    $('.editing_farmer').on('click', npp.startFarmerEditing);
+    $('.editing_cow').on('click', npp.startCowEditing);
 };
 
+/**
+ * Initiate the sub table of the cow details
+ */
 NppDash.prototype.initiateCowDetails = function(index, parentElement, gridElement, dr){
    var grid = $($(parentElement).children()[0]);
 
-   var eventsSource = {
-       datatype: "json", datafields: [ {name: 'cow_id'}, {name: 'cow_name'}, {name: 'ear_tag'}, {name: 'sex'}, {name: 'dob'}, {name: 'breed_group'}, {name: 'is_milking'}, {name: 'is_incalf'}, {name: 'parity'} ], type: 'POST',
-       localdata: npp.currentFarmer.animals
+    var eventsSource = {
+        datatype: "json", datafields: [{name: 'cow_id'}, {name: 'cow_name'}, {name: 'ear_tag'}, {name: 'sex'}, {name: 'dob'}, {name: 'breed_group'}, {name: 'is_milking'}, {name: 'is_incalf'}, {name: 'parity'}], type: 'POST',
+        localdata: npp.currentFarmer.animals
     };
 
     if (grid !== null) {
-      grid.jqxGrid({
-         source: eventsSource,
-         theme: '',
-         width: 860,
-         height: 170,
-         columnsresize: true,
-      columns: [
-         {datafield: 'cow_id', hidden: true},
-         {text: 'Name', datafield: 'cow_name', width: 100},
-         {text: 'Ear Tag', datafield: 'ear_tag', hidden: true},
-         {text: 'Sex', datafield: 'sex', width: 70},
-         {text: 'DoB', datafield: 'dob', width: 100},
-         {text: 'Breed Group', datafield: 'breed_group', width: 130},
-         {text: 'Is Milking', datafield: 'is_milking', width: 140},
-         {text: 'In Calf', datafield: 'is_incalf', width: 70},
-         {text: 'Parity', datafield: 'parity', width: 60},
-         { text: 'Actions', datafield: 'actions', width: 170, cellsalign: 'center',
-           cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
-              return '<button id="edit_cow_'+ rowdata.cow_id +'" class="editing_cow btn btn-success btn-xs">&nbsp;Edit</button>\
-              <buttin id="deactivate_cow_'+ rowdata.cow_id +'" class="deact_cow btn btn-danger btn-xs">&nbsp;Deactivate</button>';
-           }
-         }
-      ]
-      });
-   }
+        grid.jqxGrid({
+            source: eventsSource,
+            theme: '',
+            width: 860,
+            height: 170,
+            columnsresize: true,
+            columns: [
+                {datafield: 'cow_id', hidden: true},
+                {text: 'Name', datafield: 'cow_name', width: 100},
+                {text: 'Ear Tag', datafield: 'ear_tag', hidden: true},
+                {text: 'Sex', datafield: 'sex', width: 70},
+                {text: 'DoB', datafield: 'dob', width: 100},
+                {text: 'Breed Group', datafield: 'breed_group', width: 130},
+                {text: 'Is Milking', datafield: 'is_milking', width: 140},
+                {text: 'In Calf', datafield: 'is_incalf', width: 70},
+                {text: 'Parity', datafield: 'parity', width: 60},
+                {text: 'Actions', datafield: 'actions', width: 170, cellsalign: 'center',
+                    cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                        return '<button id="edit_cow_' + rowdata.cow_id + '" class="editing_cow btn btn-success btn-xs">&nbsp;Edit</button>\
+              <buttin id="deactivate_cow_' + rowdata.cow_id + '" class="deact_cow btn btn-danger btn-xs">&nbsp;Deactivate</button>';
+                    }
+                }
+            ]
+        });
+    }
 };
 
 NppDash.prototype.farmerReport = function(){};
 
 NppDash.prototype.hubReport = function(){};
 
+/**
+ * Configure the autocomplete fields
+ */
+NppDash.prototype.configureEditAutocomplete = function () {
+    var autocomplete_fields = [
+        {field: 'cf', sub_module: 'all_cfs'},
+        {field: 'hub', sub_module: 'all_hubs'},
+        {field: 'locale', sub_module: 'all_locale'}
+    ];
+
+    $.each(autocomplete_fields, function () {
+        npp.initiateAutocomplete(this.field, this.sub_module)
+    });
+};
+
+NppDash.prototype.validateFarmer = function () {
+    var e = {};
+    e.farmer_name = $('#farmer_name').val();
+    e.hub = $('#hub').val();
+    e.mobile_no = $('#mobile_no').val();
+    e.mobile_no1 = $('#mobile_no1').val();
+    e.cf = $('#cf').val();
+    e.locale = $('#locale').val();
+    e.lat = $('#gps_lat').val();
+    e.lon = $('#gps_lon').val();
+    e.is_active = $('[name=is_active]').val();
+
+    npp.curFarmer.edits = e;
+};
+
+NppDash.prototype.saveFarmer = function(){
+
+};
+
+/**
+ * Initiate the autocomplete settings for the different fields
+ *
+ * @param   {string}    input_id    The id of the element to implement the autocomplete on
+ * @param   {string}    sub_module  The identifier of the action that we are doing
+ * @returns {undefined}
+ */
+NppDash.prototype.initiateAutocomplete = function (input_id, sub_module) {
+    console.log('Set autocomplete for ' + input_id);
+    var settings = {
+        serviceUrl: $SCRIPT_ROOT + "/autocomplete", minChars: 1, maxHeight: 400, width: 190,
+        zIndex: 9999, deferRequestBy: 300, //miliseconds
+        params: {resource: sub_module}, //aditional parameters
+        noCache: true, //default is false, set to true to disable caching
+        onSelect: npp.confirmSelection,
+        formatResult: npp.fnFormatResult,
+        visibleSuggestions: true
+    };
+
+    $('#' + input_id).autocomplete(settings);
+};
+
+/**
+ * Starts the process of editing the farmer details
+ */
 NppDash.prototype.startFarmerEditing = function(){
    // update the fields with the current farmer details
    console.log('Starting to edit the farmer...');
+   var f = npp.currentFarmer.farmer;
+   $('#farmer_name').val(f.farmer_name);
+   $('#hub').val(f.hub);
+   $('#mobile_no').val(f.mobile_no);
+   $('#mobile_no1').val(f.mobile_no2);
+   $('#cf').val(f.cf);
+   $('#locale').val(f.locale);
+   $('#gps_lat').val(f.gps_latitude);
+   $('#gps_lon').val(f.gps_longitude);
+   if(f.is_active === 'Yes'){
+       $('#is_active_yes').prop('checked', true);
+   }
+   else if(f.is_active === 'No'){
+       $('#is_active_no').prop('checked', true);
+   }
    $('#edit_farmer').removeClass('hidden');
+   npp.configureEditAutocomplete();
+
+    $('#farmer_editing').validator().on('submit', function (e) {
+        if (e.isDefaultPrevented()) {
+            console.log('We have an invalid form');
+        } else {
+            console.log('All looks good... so create the ajax request');
+            var data = $('#farmer_editing').serializeObject();
+
+            var request = $.ajax({
+                type: "POST", url: $SCRIPT_ROOT + "/save_farmer", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
+                error: npp.communicationError,
+                success: function (data) {
+                    if (data.error) {
+                        Notification.show({create: true, hide: true, updateText: false, text: 'There was an error while communicating with the server', error: true});
+                        return;
+                    } else {
+                        console.log('All saved successfully');
+                    }
+                }
+            });
+            return false;
+        }
+    });
 };
 
-NppDash.prototype.startCowEditing = function(){
-   // update the fields with the cow details
-   console.log('Starting to edit the cow...');
-   $('#edit_cow').removeClass('hidden');
+/**
+ * Start editing the cow details
+ */
+NppDash.prototype.startCowEditing = function () {
+    // update the fields with the cow details
+    console.log('Starting to edit the cow...');
+    $('#').val();
+    $('#edit_cow').removeClass('hidden');
 };
 
+/**
+ * Format the autocomplete suggestions
+ */
+NppDash.prototype.fnFormatResult = function (value, searchString) {
+    var pattern = '(' + searchString.replace(npp.reEscape, '\\$1') + ')';
+    return value.data.replace(new RegExp(pattern, 'gi'), '<strong>$1<\/strong>');
+};
+
+NppDash.prototype.confirmSelection = function () {
+    console.log('Confirm the selection made...');
+};
 
 var npp = new NppDash();
 
 /**
  * A jQuery addition to add Regex selection capacity
  */
-jQuery.expr[':'].regex = function(elem, index, match) {
+jQuery.expr[':'].regex = function (elem, index, match) {
     var matchParams = match[3].split(','),
-        validLabels = /^(data|css):/,
-        attr = {
-            method: matchParams[0].match(validLabels) ?
-                        matchParams[0].split(':')[0] : 'attr',
-            property: matchParams.shift().replace(validLabels,'')
-        },
-        regexFlags = 'ig',
-        regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g,''), regexFlags);
+          validLabels = /^(data|css):/,
+          attr = {
+              method: matchParams[0].match(validLabels) ?
+                    matchParams[0].split(':')[0] : 'attr',
+              property: matchParams.shift().replace(validLabels, '')
+          },
+    regexFlags = 'ig',
+          regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g, ''), regexFlags);
     return regex.test(jQuery(elem)[attr.method](attr.property));
 }
