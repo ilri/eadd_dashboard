@@ -54,7 +54,7 @@ NppDash.prototype.initiateFarmersTree = function(){
     // the sub items collection name. Each jqxTree item has a 'label' property, but in the JSON data, we have a 'text' field. The last parameter
     // specifies the mapping between the 'text' and 'label' fields.
     var records = dataAdapter.getRecordsHierarchy('id', 'parentid', 'items', [{name: 'text', map: 'label'}]);
-    $('#tree_panel').jqxTree({source: records, width: '300px', theme: '', checkboxes: false});
+    $('#tree_panel').jqxTree({source: records, width: '250px', theme: '', checkboxes: false});
     npp.console.log('Farmers tree created');
     npp.console.log('Adding the context menu');
     var contextMenu = $("#context_menu").jqxMenu({width: '120px', theme: 'darkblue', height: '56px', autoOpenPopup: false, mode: 'popup'});
@@ -168,7 +168,7 @@ NppDash.prototype.initiateFarmerGrid = function () {
             touchmode: false,
             rowdetails: true,
             initrowdetails: npp.initiateCowDetails,
-            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 5px;'></div>", rowdetailsheight: 150, rowdetailshidden: false},
+            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 5px; z-index: 10;'></div>", rowdetailsheight: 150, rowdetailshidden: false},
             columns: [
                 {datafield: 'farmer_id', hidden: true},
                 {text: 'Name', datafield: 'farmer_name', width: 135, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
@@ -204,7 +204,7 @@ NppDash.prototype.initiateCowDetails = function(index, parentElement, gridElemen
    var grid = $($(parentElement).children()[0]);
 
     var eventsSource = {
-        datatype: "json", datafields: [{name: 'cow_id'}, {name: 'cow_name'}, {name: 'ear_tag'}, {name: 'sex'}, {name: 'dob'}, {name: 'breed_group'}, {name: 'is_milking'}, {name: 'is_active'}, {name: 'is_incalf'}, {name: 'parity'}], type: 'POST',
+        datatype: "json", datafields: [{name: 'cow_id'}, {name: 'cow_name'}, {name: 'ear_tag'}, {name: 'sex'}, {name: 'dob', type: 'date'}, {name: 'breed_group'}, {name: 'is_milking'}, {name: 'is_active'}, {name: 'is_incalf'}, {name: 'parity'}], type: 'POST',
         localdata: npp.currentFarmer.animals
     };
 
@@ -220,7 +220,7 @@ NppDash.prototype.initiateCowDetails = function(index, parentElement, gridElemen
                 {text: 'Name', datafield: 'cow_name', width: 100},
                 {text: 'Ear Tag', datafield: 'ear_tag', hidden: true},
                 {text: 'Sex', datafield: 'sex', width: 70},
-                {text: 'DoB', datafield: 'dob', width: 100},
+                {text: 'DoB', datafield: 'dob', width: 100, cellsformat: 'yyyy-MM-dd'},
                 {text: 'Breed Group', datafield: 'breed_group', width: 130},
                 {text: 'Is Active', datafield: 'is_active', width: 80},
                 {text: 'Is Milking', datafield: 'is_milking', width: 140},
@@ -351,10 +351,10 @@ NppDash.prototype.startFarmerEditing = function(){
 NppDash.prototype.startCowEditing = function () {
     // update the fields with the cow details
     console.log('Starting to edit the cow...');
+    var dob;
     var cow = $('#grid0').jqxGrid('getrowdata', this.id);
     $('#cow_name').val(cow.cow_name);
     $('#ear_tag').val(cow.ear_tag);
-    $('#dob').val(cow.dob);
     $('#breed_group').val(cow.breed_group);
     $('#sire').val(cow.sire);
     $('#dam').val(cow.dam);
@@ -385,8 +385,17 @@ NppDash.prototype.startCowEditing = function () {
     }
 
     npp.currentCow = cow;
-
     $('#edit_cow').removeClass('hidden');
+    if(cow.dob !== null){
+        dob = new Date(cow.dob);
+        var mon = dob.getMonth() + 1;
+        mon = (mon < 10) ? '0'+mon : mon;
+        var date = dob.getDate();
+        date = (date < 10) ? '0'+date : date;
+        var yr = dob.getFullYear();
+        $('#dob').val(yr +'-'+ mon +'-'+ date);
+    }
+
     npp.configureEditAutocomplete('cow');
     $('#cow_cancel').on('click', function(){
         npp.currentCow = undefined;

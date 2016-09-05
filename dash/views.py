@@ -29,8 +29,8 @@ def show_login():
         return redirect(next or url_for('show_dashboard'))
 
     return render_template('login.html',
-                           title='EADD Ngombe Planner - Dashboard',
-                           form=loginform)
+						   title='EADD Ngombe Planner - Dashboard',
+						   form=loginform)
 
 
 @app.route('/logout')
@@ -312,7 +312,7 @@ def update_farmer(data):
         where id = %d
     """
     vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lon'], data['gps_lat'],
-        int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], int(data['farmer_id']))
+			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], int(data['farmer_id']))
 
     try:
         cursor.execute(query % vals)
@@ -344,7 +344,7 @@ def save_cow():
 
     # since we have the cow_id, update the cow details
     update_cow(form_data)
-    # db1.commit()
+    db1.commit()
     print('Cow updated.... ')
     return json.jsonify({'error': False, 'msg': 'Cow updated successfully'})
 
@@ -404,7 +404,7 @@ def update_cow(data):
         where id = %d
     """
     vals = (data['cow_name'], data['ear_tag'], data['dob'], data['sex'], data['breed_group'],
-        data['milking_status'], data['is_incalf'], data['parity'], int(data['cow_id']))
+			data['milking_status'], data['is_incalf'], data['parity'], int(data['cow_id']))
 
     try:
         cursor.execute(query % vals)
