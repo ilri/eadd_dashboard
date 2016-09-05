@@ -41,6 +41,28 @@ NppDash.prototype.isRightClick = function(event) {
     return rightclick;
 };
 
+/**
+ * Show a notification on the page
+ *
+ * @param   message     The message to be shown
+ * @param   type        The type of message
+ */
+NppDash.prototype.showNotification = function(message, type, autoclose){
+   if(type === undefined) { type = 'error'; }
+   if(autoclose === undefined) { autoclose = true; }
+
+   $('#messageNotification div').html(message);
+   if($('#messageNotification').jqxNotification('width') === undefined){
+      $('#messageNotification').jqxNotification({
+         width: 350, position: 'top-right', opacity: 0.9,
+         autoOpen: false, animationOpenDelay: 800, autoClose: autoclose, template: type
+       });
+   }
+   else{ $('#messageNotification').jqxNotification({template: type}); }
+
+   $('#messageNotification').jqxNotification('open');
+};
+
 NppDash.prototype.initiateFarmersTree = function(){
     npp.console.log('Creating the farmers tree');
     // prepare the data
@@ -53,7 +75,7 @@ NppDash.prototype.initiateFarmersTree = function(){
     // get the tree items. The first parameter is the item's id. The second parameter is the parent item's id. The 'items' parameter represents
     // the sub items collection name. Each jqxTree item has a 'label' property, but in the JSON data, we have a 'text' field. The last parameter
     // specifies the mapping between the 'text' and 'label' fields.
-    var records = dataAdapter.getRecordsHierarchy('id', 'parentid', 'items', [{name: 'text', map: 'label'}]);
+    var records = dataAdapter.getRecordsHierarchy('id', 'parentid', 'items', [{name: 'text', map: 'label'}, {name: 'is_active', map: 'value'}]);
     $('#tree_panel').jqxTree({source: records, width: '250px', theme: '', checkboxes: false});
     npp.console.log('Farmers tree created');
     npp.console.log('Adding the context menu');
@@ -76,6 +98,7 @@ NppDash.prototype.initiateFarmersTree = function(){
 
         console.log('Parent Id: '+ item.parentId);
         console.log('Item Id: '+ item.id);
+        console.log('Item Id, is active: '+ item.is_active);
         if (rightClick && item.parentId !== 0) {
             console.log('We have a right click on a farmer node');
             npp.curFarmerId = item.id;
@@ -100,7 +123,6 @@ NppDash.prototype.initiateFarmersTree = function(){
 
     $("#context_menu").on('itemclick', npp.implementRightClick);
 };
-
 
 /**
  * Implement the right click when an item is clicked
@@ -183,8 +205,9 @@ NppDash.prototype.initiateFarmerGrid = function () {
                 {text: 'Is Active', datafield: 'is_active', width: 80},
                 {text: 'Actions', datafield: 'actions', width: 170, cellsalign: 'center',
                     cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                        var caption = (rowdata.is_active === 'Yes') ? 'Deactivate' : 'Activate';
                         return '<button id="edit_farmer_' + rowdata.farmer_id + '" class="editing_farmer btn btn-success btn-xs">&nbsp;Edit</button>\
-                    <buttin id="deactivate_farmer_' + rowdata.farmer_id + '" class="deact_farmer btn btn-danger btn-xs">&nbsp;Deactivate</button>';
+                    <button id="deactivate_farmer_' + rowdata.farmer_id + '" class="deact_farmer btn btn-danger btn-xs">&nbsp;'+caption+'</button>';
                     }
                 }
             ]
@@ -195,6 +218,7 @@ NppDash.prototype.initiateFarmerGrid = function () {
     }
 
     $('.editing_farmer').on('click', npp.startFarmerEditing);
+    $('.deact_farmer').on('click', npp.toggleFarmerStatus);
 };
 
 /**
@@ -228,14 +252,16 @@ NppDash.prototype.initiateCowDetails = function(index, parentElement, gridElemen
                 {text: 'Parity', datafield: 'parity', width: 60},
                 {text: 'Actions', datafield: 'actions', width: 130, cellsalign: 'center',
                     cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                        var caption = (rowdata.is_active === 'Yes') ? 'Deactivate' : 'Activate';
                         return '<button id="' + row + '" class="editing_cow btn btn-success btn-xs">&nbsp;Edit</button>\
-                        <buttin id="deactivate_cow_' + rowdata.cow_id + '" class="deact_cow btn btn-danger btn-xs">&nbsp;Deactivate</button>';
+                        <button id="d_' + row + '" class="deact_cow btn btn-danger btn-xs">&nbsp;'+ caption +'</button>';
                     }
                 }
             ]
         });
     }
     $('.editing_cow').on('click', npp.startCowEditing);
+    $('.deact_cow').on('click', npp.toggleCowStatus);
 };
 
 NppDash.prototype.farmerReport = function(){};
@@ -434,31 +460,50 @@ NppDash.prototype.startCowEditing = function () {
     });
 };
 
+/**
+ * Activate or deactivate the status of a cow
+ * @returns {undefined}
+ */
+NppDash.prototype.toggleCowStatus = function(){
+    var cid = this.id.substring(2);
+    var cow = $('#grid0').jqxGrid('getrowdata', cid);
+    var is_active = (cow.is_active === 'Yes') ? 'no' : 'yes';
+    var data = {cow_id: cow.cow_id, is_active: is_active, farmer_id: npp.currentFarmer.farmer.farmer_id};
 
-NppDash.prototype.cancelCow = function(){
-
+    var request = $.ajax({
+        type: "POST", url: $SCRIPT_ROOT + "/toggle_cow_status", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
+        error: npp.communicationError,
+        success: function (data) {
+            if (data.error) {
+                npp.showNotification(data.msg, 'error');
+                return;
+            } else {
+                console.log('Cow status updated well.... lets update the form');
+                npp.editFarmer();
+                npp.showNotification(data.msg, 'success');
+            }
+        }
+    });
 };
 
-/**
- * Show a notification on the page
- *
- * @param   message     The message to be shown
- * @param   type        The type of message
- */
-NppDash.prototype.showNotification = function(message, type, autoclose){
-   if(type === undefined) { type = 'error'; }
-   if(autoclose === undefined) { autoclose = true; }
-
-   $('#messageNotification div').html(message);
-   if($('#messageNotification').jqxNotification('width') === undefined){
-      $('#messageNotification').jqxNotification({
-         width: 350, position: 'top-right', opacity: 0.9,
-         autoOpen: false, animationOpenDelay: 800, autoClose: autoclose, template: type
-       });
-   }
-   else{ $('#messageNotification').jqxNotification({template: type}); }
-
-   $('#messageNotification').jqxNotification('open');
+NppDash.prototype.toggleFarmerStatus = function(){
+    var f = npp.currentFarmer.farmer;
+    var is_active = (f.is_active === 'Yes') ? 'no' : 'yes';
+    var data = {is_active: is_active, farmer_id: f.farmer_id};
+    $.ajax({
+        type: "POST", url: $SCRIPT_ROOT + "/toggle_farmer_status", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
+        error: npp.communicationError,
+        success: function (data) {
+            if (data.error) {
+                npp.showNotification(data.msg, 'error');
+                return;
+            } else {
+                console.log('Farmer status updated well.... lets update the form');
+                npp.editFarmer();
+                npp.showNotification(data.msg, 'success');
+            }
+        }
+    });
 };
 
 var npp = new NppDash();

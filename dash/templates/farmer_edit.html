@@ -16,7 +16,7 @@
 					<div class="form-group">
 						<label class="col-md-6 control-label" for="mobile_no">Mobile No&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
 						<div class="col-md-6">
-							<input type="text" pattern="^25[456]\d{9}$" required name="mobile_no" id="mobile_no" placeholder="2547123456789" class='input-medium form-control' />
+							<input type="text" pattern="^(25[456]|0)\d{9}$" required name="mobile_no" id="mobile_no" placeholder="2547123456789" class='input-medium form-control' />
 						</div>
                         <div class="help-block with-errors"></div>
 					</div>
@@ -24,7 +24,7 @@
 					<div class="form-group">
 						<label class="col-md-6 control-label" for="mobile_no1">Alternative No</label>
 						<div class="col-md-6">
-							<input type="text" pattern="^25[456]\d{9}$" name="mobile_no1" id="mobile_no1" placeholder="2547123456789" class='input-medium form-control' />
+							<input type="text" pattern="^(25[456]|0)\d{9}$" name="mobile_no1" id="mobile_no1" placeholder="2547123456789" class='input-medium form-control' />
 						</div>
                         <div class="help-block with-errors"></div>
 					</div>

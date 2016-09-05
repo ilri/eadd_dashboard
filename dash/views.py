@@ -47,7 +47,7 @@ def show_dashboard():
     # get all the locations
     query = """
     select
-        location_district as id, location_district as text, "-1" as parentid
+        location_district as id, location_district as text, "-1" as parentid, 1 as is_active
     from farmer
     where extension_personnel_id not in(13,2) and project like 'eadd%' and project not like '%test%'
         and location_district is not null and location_district != ""
@@ -60,7 +60,7 @@ def show_dashboard():
     # get all the farmers
     q2 = """
     select
-        id as id, name as text, location_district as parentid
+        id as id, name as text, location_district as parentid, is_active
     from farmer
     where location_district is not null and location_district != "" and project not like "%test%"
         and extension_personnel_id not in (13,2)  and project like "eadd%"
@@ -323,6 +323,55 @@ def update_farmer(data):
         return 1
 
     return 0
+
+
+@app.route('/toggle_farmer_status', methods=['POST'])
+@login_required
+def toggle_farmer_status():
+    cursor = db1.cursor()
+    data = request.get_json()
+    data['is_active'] = 1 if data['is_active'] == 'yes' else 0
+    query = 'update farmer set is_active = %d where id = %d'
+    vals = (int(data['is_active']), int(data['farmer_id']))
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        return json.jsonify({'error': True, 'msg': 'Error while updating the farmer'})
+
+    db1.commit()
+    return json.jsonify({'error': False, 'msg': 'The farmer was updated well'})
+
+
+@app.route('/toggle_cow_status', methods=['POST'])
+@login_required
+def toggle_cow_status():
+    cursor = db1.cursor()
+    data = request.get_json()
+
+    if(data['is_active'] == 'no'):
+        query = 'update cow set old_farmer_id = %d, farmer_id = 0 where id = %d'
+        vals = (int(data['farmer_id']), int(data['cow_id']))
+        try:
+            cursor.execute(query % vals)
+        except (AttributeError) as e:
+            print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+            print(e)
+            return json.jsonify({'error': True, 'msg': 'Error while updating the cow status'})
+    else:
+        query = 'update cow set old_farmer_id = NULL, farmer_id = %d where id = %d'
+        vals = (int(data['farmer_id']), int(data['cow_id']))
+        try:
+            cursor.execute(query % vals)
+        except (AttributeError) as e:
+            print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+            print(e)
+            return json.jsonify({'error': True, 'msg': 'Error while updating the cow status'})
+
+    db1.commit()
+    return json.jsonify({'error': False, 'msg': 'The cow was updated well'})
+
 
 @app.route('/save_cow', methods=['POST'])
 @login_required
