@@ -1,0 +1,8 @@
+#login{ margin: auto; border: 6px solid #999; background: white; width: 500px; }
+fieldset{
+    display: block; min-width: -webkit-min-content; -webkit-margin-start: 2px; -webkit-margin-end: 2px; -webkit-padding-before: 0.35em;
+    -webkit-padding-start: 0.75em; -webkit-padding-end: 0.75em; -webkit-padding-after: 0.625em; text-align: center;
+}
+legend{ width: 200px; margin: auto; text-align: center; border-bottom: none; }
+table{ margin: auto; }
+table td{ padding: 4px;}

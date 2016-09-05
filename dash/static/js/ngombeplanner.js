@@ -311,6 +311,10 @@ NppDash.prototype.startFarmerEditing = function(){
    }
    $('#edit_farmer').removeClass('hidden');
    npp.configureEditAutocomplete('farmer');
+   $('#cancel_farmer').on('click', function(){
+        $('#farmer_editing').clearForm();
+        $('#edit_farmer').addClass('hidden');
+   });
 
     // validate and save the entered data when the user clicks on submit
     $('#farmer_editing').validator().on('submit', function (e) {
@@ -384,6 +388,11 @@ NppDash.prototype.startCowEditing = function () {
 
     $('#edit_cow').removeClass('hidden');
     npp.configureEditAutocomplete('cow');
+    $('#cow_cancel').on('click', function(){
+        npp.currentCow = undefined;
+        $('#cow_editing').clearForm();
+        $('#edit_cow').addClass('hidden');
+    });
 
     // validate and save the entered data when the user clicks on submit
     $('#cow_editing').validator().on('submit', function (e) {
@@ -416,6 +425,10 @@ NppDash.prototype.startCowEditing = function () {
     });
 };
 
+
+NppDash.prototype.cancelCow = function(){
+
+};
 
 /**
  * Show a notification on the page

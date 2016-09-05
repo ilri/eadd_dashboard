@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='bower/jqwidgets/jqwidgets/styles/jqx.base.css') }}" />
-<link rel="stylesheet" href="{{ url_for('static', filename='styles/ngombeplanner.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='bower/bootstrap/dist/css/bootstrap.min.css') }}" type="text/css" />
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/ngombeplanner.css') }}" />
+
 <script type=text/javascript>
   $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
 </script>

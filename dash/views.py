@@ -13,13 +13,8 @@ import sys
 
 last_error = ''
 
-@app.route('/')
-@app.route('/index')
-def show_index():
-    return render_template('index.html')
 
-
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def show_login():
     loginform = LoginForm()
     if loginform.validate_on_submit():
@@ -42,7 +37,7 @@ def show_login():
 @login_required
 def user_logout():
     logout_user()
-    return render_template('index.html')
+    return redirect(url_for('show_login'))
 
 
 @app.route('/dashboard')
@@ -431,3 +426,21 @@ def update_cow(data):
             last_error = 'Error while executing the query'
             return 1
     return 0
+
+
+@app.route('/cow_stats')
+@login_required
+def cow_stats():
+    return render_template('pending.html')
+
+
+@app.route('/farmer_stats')
+@login_required
+def farmer_stats():
+    return render_template('pending.html')
+
+
+@app.route('/canned_queries')
+@login_required
+def canned_queries():
+    return render_template('pending.html')
