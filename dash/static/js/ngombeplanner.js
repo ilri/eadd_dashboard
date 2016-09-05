@@ -156,7 +156,7 @@ NppDash.prototype.initiateFarmerGrid = function () {
         datatype: 'json', datafields: [{name: 'farmer_id'}, {name: 'farmer_name'}, {name: 'hub'}, {name: 'mobile_no'}, {name: 'cf'}, {name: 'locale'}, {name: 'is_active'}],
         localdata: npp.currentFarmer.farmer
     };
-    var animalsAdapter = new $.jqx.dataAdapter(source);
+    var farmerAdapter = new $.jqx.dataAdapter(source);
     // initialize jqxGrid
     if ($('#farmer_details :regex(class, jqx\-grid)').length === 0) {
         $("#farmer_details").jqxGrid({
@@ -190,7 +190,8 @@ NppDash.prototype.initiateFarmerGrid = function () {
             ]
         });
     } else {
-        $("#farmer_details").jqxGrid({source: animalsAdapter});
+        console.log('Update the FARMER grid with the new info...')
+        $("#farmer_details").jqxGrid({source: farmerAdapter});
     }
 
     $('.editing_farmer').on('click', npp.startFarmerEditing);
@@ -391,7 +392,8 @@ NppDash.prototype.startCowEditing = function () {
         } else {
             console.log('All looks good... so create the ajax request');
             var data = $('#cow_editing').serializeObject();
-            data.cow_id = npp.currentCow.id;
+            data.cow_id = npp.currentCow.cow_id;
+            data.farmer_id = npp.currentFarmer.farmer.farmer_id;
 
             var request = $.ajax({
                 type: "POST", url: $SCRIPT_ROOT + "/save_cow", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
@@ -403,7 +405,8 @@ NppDash.prototype.startCowEditing = function () {
                     } else {
                         $('#cow_editing').clearForm();
                         $('#edit_cow').addClass('hidden');
-                        console.log('All saved successfully');
+                        console.log('All saved successfully..now refresh the page');
+                        npp.editFarmer();
                         npp.showNotification(data.msg, 'success');
                     }
                 }

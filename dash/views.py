@@ -11,7 +11,7 @@ from .login import LoginForm
 
 import sys
 
-last_error = {}
+last_error = ''
 
 @app.route('/')
 @app.route('/index')
@@ -211,7 +211,8 @@ def save_farmer():
     print('Validating the passed data for the farmer')
     ret = validate_farmer(form_data)
     if(ret == 1):
-        return last_error
+        return json.jsonify({'error': True, 'msg': last_error})
+
     print('Validation passed, now lets save the data')
 
     print('Normalise the passed data')
@@ -242,7 +243,7 @@ def normalise_farmer(data):
         except Exception as e:
             print("\nError while running\n", query, "\nData:\n", data['locale'])
             print(e)
-            # last_error = {'error': True, 'msg': e}
+            last_error = 'Error while saving farmer'
             return 0
         data['locale'] = locale['prefix']
 
@@ -257,7 +258,7 @@ def normalise_farmer(data):
         except Exception as e:
             print("\nError while running\n", query, "\nData:\n", data['cf'])
             print(e)
-            # last_error = {'error': True, 'msg': 'Error while executing the query'}
+            last_error = 'Error while executing the query'
             return 0
         data['cf'] = cf['id']
 
@@ -296,10 +297,13 @@ def validate_farmer(form_data):
         'gps_lon': form_data['gps_lon'],
         'is_active': form_data['is_active']
     }
+
+    print(data)
+    print(form_data)
     try:
         validator(data)
     except Invalid as e:
-        last_error = json.jsonify({'error': True, 'msg': e.msg})
+        last_error = e.msg
         return 1
     return 0
 
@@ -320,7 +324,110 @@ def update_farmer(data):
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
-        last_error = json.jsonify({'error': True, 'msg': 'Error while executing the query'})
+        last_error = 'Error while executing the query'
         return 1
 
+    return 0
+
+@app.route('/save_cow', methods=['POST'])
+@login_required
+def save_cow():
+    form_data = request.get_json()
+
+    print('Cow: Validating the passed data')
+    ret = validate_cow(form_data)
+    if(ret == 1):
+        return json.jsonify({'error': True, 'msg': last_error})
+    print('Cow: Validation passed, now lets save the data')
+
+    print('Cow: Normalise the passed data')
+    form_data = normalise_cow(form_data)
+    if(form_data == 1):
+        return json.jsonify({'error': True, 'msg': last_error})
+    print(form_data)
+    print('Normalisation passed')
+
+    # since we have the cow_id, update the cow details
+    update_cow(form_data)
+    # db1.commit()
+    print('Cow updated.... ')
+    return json.jsonify({'error': False, 'msg': 'Cow updated successfully'})
+
+
+def validate_cow(form_data):
+    # define our constraints
+    validator = Schema({
+        Required('farmer_id'): All(int, msg='Missing farmer id. Stop tampering with the system.'),
+        Required('cow_id'): All(int, msg='Missing cow id. Stop tampering with the system.'),
+        Required('cow_name'): All(str, Length(min=3, max=15), msg='The cow name should have 3-15 characters'),
+        Required('breed_group'): All(str, Length(min=5, max=15), msg='The breed name should have 5-15 characters'),
+        Required('csrf_token'): All(str),
+        # 'dam': Any(str, Length(min=3, max=15), msg="The dam name should be between 3-15 characters"),
+        # 'sire': Any(str, Length(min=3, max=15), msg="The sire name should be between 3-15 characters"),
+        'ear_tag': Any(str, Length(min=3, max=15), msg="The ear tag should be between 3-15 characters"),
+        Required('dob'): All(Match('^\d{4}\-\d{2}\-\d{2}$'), msg='Please add the DoB for the cow'),
+        'parity': All(int, msg='Please specify the cow parity.'),
+        Required('is_active'): All(str, Any('yes', 'no'), msg='Select whether the cow is active or not'),
+        Required('sex'): All(str, Any('Male', 'Female'), msg='Specify the sex of the cow'),
+        'is_incalf': All(str, Any('yes', 'no'), msg='Select whether the cow is incalf or not'),
+        'milking_status': All(str, Any('adult_milking', 'adult_not_milking'), msg='Select the status of the cow')
+    })
+
+    form_data['parity'] = int(form_data['parity'])
+    print(form_data)
+    try:
+        validator(form_data)
+    except Invalid as e:
+        last_error = e.msg
+        print(e)
+        return 1
+    return 0
+
+
+def normalise_cow(data):
+    """
+    Normalise the data passed from the user, by converting the options to FK, indices etc
+    """
+    # ensure that we have parity, milking_status and whether is incalf for the cows
+    if(data['sex'] == 'female'):
+        if(data['is_incalf'] == ''):
+            print('Expecting for all cows to have an incalf status')
+            return 1
+        data['is_incalf'] = 1 if data['is_incalf'] == 'yes' else 0
+
+        if(data["adult_milking"] == ''):
+            print('Expecting for all cows to have a milking status')
+            return 1
+    return data
+
+def update_cow(data):
+    cursor = db1.cursor()
+    query = """
+        update cow set
+            name ='%s', ear_tag_number = '%s', date_of_birth = '%s', sex = '%s', breed_group = '%s',
+            milking_status = '%s', in_calf = '%s', parity = %d
+        where id = %d
+    """
+    vals = (data['cow_name'], data['ear_tag'], data['dob'], data['sex'], data['breed_group'],
+        data['milking_status'], data['is_incalf'], data['parity'], int(data['cow_id']))
+
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        last_error = 'Error while executing the query'
+        return 1
+
+    # update the farmer_id if there is need
+    if(data['is_active'] == 'no'):
+        query = 'update cow set old_farmer_id = %d, farmer_id = 0 where id = %d'
+        vals = (int(data['farmer_id']), int(data['cow_id']))
+        try:
+            cursor.execute(query % vals)
+        except (AttributeError) as e:
+            print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+            print(e)
+            last_error = 'Error while executing the query'
+            return 1
     return 0
