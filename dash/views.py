@@ -21,9 +21,21 @@ def show_login():
         username = loginform.username.data
         password = loginform.password.data
         user = User.query.filter_by(username=username).first()
+        print(user)
 
+        if user == None:
+            return render_template('login.html',
+						   title='EADD Ngombe Planner - Dashboard',
+                           username_msg='Invalid username',
+						   form=loginform)
         if verify_password(password, user.password):
             login_user(user)
+        else:
+            print("Couldn't authenticate the user... redirect to login page")
+            return render_template('login.html',
+						   title='EADD Ngombe Planner - Dashboard',
+                           addinfo='Invalid username or password',
+						   form=loginform)
 
         next = request.args.get('next')
         return redirect(next or url_for('show_dashboard'))

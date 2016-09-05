@@ -12,22 +12,28 @@
     <fieldset id="login">
         <legend>EADD Dashboard</legend>
         <table>
+            {% if addinfo %}
+            <tr><td colspan="2"><span style="color: red;">[{{ addinfo }}]</span></td></tr>
+            {% endif %}
             <tr>
                 <th>Username:</th>
                 <td>{{ form.username(size=32) }}</td>
             </tr>
             {% for error in form.username.errors %}
             <tr>
-                <td><span style="color: red;">[{{ error }}]</span></td>
+                <td colspan="2"><span style="color: red;">[{{ error }}]</span></td>
             </tr>
             {% endfor %}
+            {% if username_msg %}
+            <tr><td colspan="2"><span style="color: red;">[{{ username_msg }}]</span></td></tr>
+            {% endif %}
             <tr>
                 <th>Password:</th>
                 <td>{{ form.password(size=32) }}</td>
             </tr>
             {% for error in form.password.errors %}
             <tr>
-                <td><span style="color: red;">[{{ error }}]</span></td>
+                <td colspan="2"><span style="color: red;">[{{ error }}]</span></td>
             </tr>
             {% endfor %}
         </table>
