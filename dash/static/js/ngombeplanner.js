@@ -196,6 +196,28 @@ NppDash.prototype.editFarmer = function(){
 };
 
 /**
+ * Load the farmer display interface for editing the farmers
+ * @returns {undefined}
+ */
+NppDash.prototype.editCF = function(){
+   // get the farmer particulars
+    var data = {cf_id: npp.currentCFId};
+    var request = $.ajax({
+        type: "POST", url: $SCRIPT_ROOT + "/cf_details", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
+        error: npp.communicationError,
+        success: function (data) {
+            if (data.error) {
+                Notification.show({create: true, hide: true, updateText: false, text: 'There was an error while communicating with the server', error: true});
+                return;
+            } else {
+                npp.currentCF = data.cf;
+                npp.startCFEditing();
+            }
+        }
+    });
+};
+
+/**
  * Ready the edit panel as well as the jqx table
  * @returns {undefined}
  */
@@ -312,6 +334,9 @@ NppDash.prototype.configureEditAutocomplete = function (module) {
             {field: 'breed_group', sub_module: 'all_breeds'},
             {field: 'milking_status', sub_module: 'milking_statuses'}
         ];
+    }
+    else if(module === 'cf'){
+        autocomplete_fields = [];
     }
 
     $.each(autocomplete_fields, function () {
@@ -586,6 +611,10 @@ NppDash.prototype.globalEditing = function(data){
         npp.curFarmerId = data.farmer_id;
         npp.editFarmer();
     }
+    else if(data.category === 'CF'){
+        npp.currentCFId = data.id;
+        npp.editCF();
+    }
 };
 
 NppDash.prototype.loadTemplate = function(template_path){
@@ -617,6 +646,9 @@ NppDash.prototype.startAddNew = function(){
     else if(this.id === 'add_new_cow'){
         npp.addNewCow();
     }
+    else if(this.id === 'add_new_cf'){
+        npp.addNewCF();
+    }
 };
 
 /**
@@ -632,6 +664,10 @@ NppDash.prototype.addNewFarmer = function(){
     npp.farmerSaveCancelButtons();
 };
 
+/**
+ * Start the process of adding a new cow
+ * @returns {undefined}
+ */
 NppDash.prototype.addNewCow = function(){
     // prepare the interface for adding new cows
     console.log('Adding a new cow')
@@ -641,7 +677,96 @@ NppDash.prototype.addNewCow = function(){
     npp.currentCowId = undefined;
     npp.cowSaveCancelButtons();
     // bind the farmer field to autocomplete
-    npp.initiateAutocomplete('farmer_id', 'farmer')
+    npp.initiateAutocomplete('farmer_id', 'farmer');
 };
+
+/**
+ * Start the process of adding a new CF
+ * @returns {undefined}
+ */
+NppDash.prototype.addNewCF = function(){
+    // prepare the interface for adding new cows
+    console.log('Adding a new cf')
+    $('#add_cf').removeClass('hidden');
+    npp.configureEditAutocomplete('cf');
+    npp.curCFId = undefined;
+    npp.currentCFId = undefined;
+    npp.cfSaveCancelButtons();
+};
+
+/**
+ * Starts the process of editing the CF details
+ */
+NppDash.prototype.startCFEditing = function(){
+   // update the fields with the current farmer details
+   console.log('Starting to edit the CF...');
+   console.log(npp.currentCF);
+   var f = npp.currentCF;
+   $('#cf_name').val(f.cf_name);
+   $('#cf_mobile_no').val(f.mobile_no);
+   $('#cf_mobile_no1').val(f.mobile_no2);
+   if(f.is_super === 'Yes'){
+       $('#is_super_yes').prop('checked', true);
+   }
+   else if(f.is_super === 'No'){
+       $('#is_super_no').prop('checked', true);
+   }
+   $('#edit_cf').removeClass('hidden');
+   npp.configureEditAutocomplete('cf');
+   npp.cfSaveCancelButtons();
+};
+
+/**
+ * Bind the save/cancel buttons of add a new cow form
+ * @returns {undefined}
+ */
+NppDash.prototype.cfSaveCancelButtons = function(){
+    $('#cancel_cf').on('click', function(){
+        console.log('Cancelling a cf');
+        npp.currentCF = undefined;
+        $('#cf_editing').clearForm();
+        $('#edit_cf').addClass('hidden');
+        $('#search_field').val('');
+    });
+
+    // validate and save the entered data when the user clicks on submit
+    $('#cf_editing').validator().on('submit', function (e) {
+        if (e.isDefaultPrevented()) {
+            console.log('We have an invalid form');
+        } else {
+            console.log('CF: All looks good... so create the ajax request');
+            var data = $('#cf_editing').serializeObject();
+            data.cf_id = npp.currentCFId;
+
+            var request = $.ajax({
+                type: "POST", url: $SCRIPT_ROOT + "/save_cf", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
+                error: npp.communicationError,
+                success: function (data) {
+                    if (data.error) {
+                        npp.showNotification(data.msg, 'error');
+                        return;
+                    } else {
+                        $('#cf_editing').clearForm();
+                        console.log('CF: All saved successfully..now refresh the page');
+                        if(npp.currentCF !== undefined){
+                            // we were editing a CF
+                            console.log('CF: Close editing panel');
+                            $('#edit_cf').addClass('hidden');
+                            $('#search_field').val('');
+                        }
+                        else{
+                            // we were adding a new CF
+                            $('#add_cf').addClass('hidden');
+                            npp.currentCFId = undefined;
+                        }
+                        npp.showNotification(data.msg, 'success');
+                    }
+                }
+            });
+            return false;
+        }
+    });
+};
+
 
 var npp = new NppDash();

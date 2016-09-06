@@ -10,6 +10,8 @@ body { margin: 0;   padding: 0; font-family: 'Open Sans', "Lucida Grande", arial
 .hidden{ display: none; }
 .nav .dropdown-menu{ z-index: 99999; }
 
+#add_cf .left_panel, #add_cf .right_panel, #edit_cf .left_panel, #edit_cf .right_panel{ min-height: 150px; }
+
 /** Auto complete styling */
 .autocomplete-suggestions { border: 1px solid #999; background: #FFF; overflow: auto; }
 .autocomplete-suggestion { padding: 2px 5px; white-space: nowrap; overflow: hidden; }

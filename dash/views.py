@@ -2,6 +2,7 @@ from flask import render_template, redirect, url_for, request, json
 from flask_login import login_user, logout_user, login_required
 from flask_wtf import Form
 from voluptuous import Schema, Required, Invalid, All, Match, Length, Any
+from datetime import datetime
 
 from dash import app, db1
 from dash.models import User
@@ -358,11 +359,12 @@ def save_new_farmer(data):
     cursor = db1.cursor()
     query = """
         insert into
-        farmer(name, mobile_no, location_district, gps_latitude, gps_longitude, extension_personnel_id, pref_locale, is_active, mobile_no2)
-        values('%s',  '%s', '%s', '%s', '%s', %d, '%s', %d, '%s')
+        farmer(name, mobile_no, location_district, gps_latitude, gps_longitude, extension_personnel_id, pref_locale, is_active, mobile_no2, date_added)
+        values('%s',  '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s')
     """
+    now = datetime.now().strftime('%Y-%m-%d %H:%i:%s')
     vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lat'], data['gps_lon'],
-			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'])
+			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], now)
 
     try:
         cursor.execute(query % vals)
@@ -538,11 +540,12 @@ def save_new_cow(data):
     cursor = db1.cursor()
     query = """
         insert into
-        cow(farmer_id, name, ear_tag_number, date_of_birth, sex, breed_group, milking_status, in_calf, parity)
-        values(%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d)
+        cow(farmer_id, name, ear_tag_number, date_of_birth, sex, breed_group, milking_status, in_calf, parity, datetime_added)
+        values(%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s')
     """
+    now = datetime.now().strftime('%Y-%m-%d %H:%i:%s')
     vals = (data['farmer_id'], data['cow_name'], data['ear_tag'], data['dob'], data['sex'], data['breed_group'],
-			data['milking_status'], data['is_incalf'], data['parity'])
+			data['milking_status'], data['is_incalf'], data['parity'], now)
 
     try:
         cursor.execute(query % vals)
@@ -629,6 +632,114 @@ def global_search(criteria):
         suggestions.append({'value': value, 'data': data})
 
     return suggestions
+
+
+@app.route('/cf_details', methods=['POST'])
+@login_required
+def cf_details():
+    cursor = db1.cursor()
+    form_data = request.get_json()
+    cf_id = int(form_data['cf_id'])
+    # get the cf id details
+    query = """
+    select
+      a.id as cf_id, a.name as cf_name, a.mobile_no, a.mobile_no2, if(is_super = 1, 'Yes', 'No') as is_super
+    from extension_personnel as a
+    where a.id = %d
+    """
+    cursor.execute(query % (cf_id))
+    cf = cursor.fetchone()
+
+    return json.jsonify({'cf': cf})
+
+
+@app.route('/save_cf', methods=['POST'])
+@login_required
+def save_cf():
+    form_data = request.get_json()
+
+    print('CF: Validating the passed data')
+    ret = validate_cf(form_data)
+    if(ret == 1):
+        return json.jsonify({'error': True, 'msg': last_error})
+    print('Cow: Validation passed, now lets save the data')
+
+    form_data['is_super'] = 1 if form_data['is_super'] == 'yes' else 0
+
+    # since we have the cow_id, update the cow details
+    if 'cf_id' in form_data:
+        ret = update_cf(form_data)
+        if(ret == 1):
+            return json.jsonify({'error': True, 'msg': last_error})
+    else:
+        ret = save_new_cf(form_data)
+        if(ret == 1):
+            return json.jsonify({'error': True, 'msg': last_error})
+
+    db1.commit()
+    print('CF updated.... ')
+    return json.jsonify({'error': False, 'msg': 'CF saved successfully'})
+
+
+def validate_cf(form_data):
+    # define our constraints
+    validator = Schema({
+        Required('csrf_token'): All(str),
+        'cf_id': All(int, msg='Invalid CF id. Stop tampering with the system.'),
+        Required('cf_name'): All(str, Length(min=3, max=25), msg='The CF name should have 3-25 characters'),
+        Required('cf_mobile_no'): All(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'")),
+        'cf_mobile_no1': Any(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'"), ''),
+        Required('is_super'): All(str, Any('yes', 'no'), msg='Select whether the CF is a super CF or not')
+    })
+
+    try:
+        validator(form_data)
+    except Invalid as e:
+        last_error = e.msg
+        print(e)
+        return 1
+    return 0
+
+
+def update_cf(data):
+    print('Updating the CF...')
+    cursor = db1.cursor()
+    query = """
+        update extension_personnel set
+            name ='%s', mobile_no = '%s', mobile_no2 = '%s', is_super = %d
+        where id = %d
+    """
+    vals = (data['cf_name'], data['cf_mobile_no'], data['cf_mobile_no1'], data['is_super'], int(data['cf_id']))
+    print(vals)
+
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        last_error = 'Error while executing the query'
+        return 1
+
+
+def save_new_cf(data):
+    cursor = db1.cursor()
+    query = """
+        insert into
+        extension_personnel(name, mobile_no, mobile_no2, is_super, date_added)
+        values('%s', '%s', '%s', %d, '%s')
+    """
+
+    now = datetime.now().strftime('%Y-%m-%d %H:%i:%s')
+    vals = (data['cf_name'], data['cf_mobile_no'], data['cf_mobile_no1'], int(data['is_super']), now)
+
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        last_error = 'Error while executing the query'
+        return 1
+
 
 
 @app.route('/add_new_template', methods=['POST'])
