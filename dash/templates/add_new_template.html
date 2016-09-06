@@ -1,0 +1,208 @@
+<div id='add_new'>
+	<div id='add_farmer' class="hidden">
+		<form class='form-inline' role="form" id="farmer_editing" method='POST' action='new_farmer'>
+            {{form.hidden_tag()}} <!-- CSRF token -->
+			<fieldset id="farmer">
+				<div class="left_panel">
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="farmer_name">Farmer Name&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+                            <input type="text" required name="farmer_name" id="farmer_name" placeholder="Farmer Name" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="mobile_no">Mobile No&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<input type="text" pattern="^(25[456]|0)\d{9}$" required name="mobile_no" id="mobile_no" placeholder="2547123456789" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="mobile_no1">Alternative No</label>
+						<div class="col-md-6">
+							<input type="text" pattern="^(25[456]|0)\d{9}$" name="mobile_no1" id="mobile_no1" placeholder="2547123456789" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="cf">Community Facilitator&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<input type="text" required name="cf" id="cf" placeholder="Community Facilitator" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+				</div>
+
+				<div class="right_panel">
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="hub">Hub&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<input type="text" required name="hub" id="hub" placeholder="Hub Name" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="locale">Language&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<input type="text" required name="locale" id="locale" placeholder="Language" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="gps_lat">HH Latitude&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+                            <input type="text" required pattern="^\-?\d{1}\.\d{3,10}$" name="gps_lat" id="gps_lat" placeholder="HH Latitude" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="gps_lon">HH Longitude&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<input type="text" required pattern="^0?\d{2}\.\d{3,10}$" name="gps_lon" id="gps_lon" placeholder="HH Longitude" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="is_active">Is Active&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<label class="radio-inline">
+                                <input type="radio" name="is_active" id="is_active_yes" value="yes" required> Yes
+                            </label>
+							<label class="radio-inline">
+                                <input type="radio" name="is_active" id="is_active_no" value="no" required> No
+                            </label>
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+				</div>
+            <div class="buttons">
+               <button type="submit" id="new_farmer" class="btn btn-success">Save</button>
+               <button type="button" id="cancel_farmer" class="btn btn-danger">Cancel</button>
+            </div>
+			</fieldset>
+		</form>
+	</div>
+	<div id='add_cow' class="hidden">
+		<form class='form-inline' role="form" id="new_cow" method='POST' action='new_cow'>
+            {{form.hidden_tag()}} <!-- CSRF token -->
+			<fieldset id="cow">
+				<div class="left_panel">
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="cow_name">Cow Name&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<input type="text" required name="cow_name" id="cow_name" placeholder="Name" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="ear_tag">Ear Tag</label>
+						<div class="col-md-6">
+							<input type="text" name="ear_tag" id="ear_tag" placeholder="Ear Tag" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="dob">Date of Birth&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+                            <input type="text" required name="dob" id="dob" pattern="^\d{4}\-\d{2}\-\d{2}$" placeholder="yyyy-mm-dd" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="sex">Sex&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<label class="radio-inline">
+                                <input type="radio" name="sex" id="male" value="Male" required> Male
+                            </label>
+							<label class="radio-inline">
+                                <input type="radio" name="sex" id="female" value="Female" required> Female
+                            </label>
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="breed_group">Breed Group&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+                            <input type="text" required name='breed_group' id="breed_group" placeholder="Breed Group" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+				</div>
+				<div class="right_panel">
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="milking_status">Milking Status&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<input type="text" required name='milking_status' id="milking_status" placeholder="Milking Status" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="is_incalf">Is Incalf&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<label class="radio-inline">
+                                <input type="radio" name="is_incalf" id="incalf_yes" value="yes" required> Yes
+                            </label>
+							<label class="radio-inline">
+                                <input type="radio" name="is_incalf" id="incalf_no" value="no" required> No
+                            </label>
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="sire">Parity&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+                            <input type="number" min="0" max="10" required name='parity' id="parity" placeholder="No" class='input-medium form-control' />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="sire">Sire</label>
+						<div class="col-md-6">
+							<input type="text" name='sire' id="sire" placeholder="Sire" class='input-medium form-control' disabled />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="dam">Dam</label>
+						<div class="col-md-6">
+							<input type="text" name='dam' id="dam" placeholder="Dam" class='input-medium form-control' disabled />
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-md-6 control-label" for="is_active">Is Active&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
+						<div class="col-md-6">
+							<label class="radio-inline">
+                                <input type="radio" name="is_active" id="active_cow_yes" value="yes" required> Yes
+                            </label>
+							<label class="radio-inline">
+                                <input type="radio" name="is_active" id="active_cow_no" value="no" required> No
+                            </label>
+						</div>
+                        <div class="help-block with-errors"></div>
+					</div>
+				</div>
+            <div class="buttons">
+               <button type="submit" class="btn btn-success" id="cow_save">Save</button>
+               <button type="button" class="btn btn-danger" id="cow_cancel">Cancel</button>
+            </div>
+			</fieldset>
+		</form>
+	</div>
+</div>

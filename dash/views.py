@@ -135,6 +135,8 @@ def autocomplete_options():
         suggestions = all_breeds(criteria)
     elif(option == 'milking_statuses'):
         suggestions = all_milking_statuses(criteria)
+    elif(option == 'global_search'):
+        suggestions = global_search(criteria)
 
     to_return = {'query': criteria, 'suggestions': suggestions}
     return json.jsonify(to_return)
@@ -281,8 +283,8 @@ def validate_farmer(form_data):
     validator = Schema({
         Required('farmer_id'): All(int, msg='Missing farmer id. Stop tampering with the system.'),
         Required('farmer_name'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
-        Required('mobile_no'): All(Match('^25[456]\d{9}$', msg="Mobile should be like '254700123456'")),
-        'mobile_no1': Any(Match('^25[456]\d{9}$', msg="Mobile should be like '254700123456'"), ''),
+        Required('mobile_no'): All(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'")),
+        'mobile_no1': Any(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'"), ''),
         Required('cf'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
         Required('hub'): All(str, Length(min=3, max=20), msg='The hub name should have 3-20 characters'),
         Required('locale'): All(str, Length(min=2, max=20), msg='The language should have 2-20 characters'),
@@ -305,11 +307,11 @@ def validate_farmer(form_data):
         'is_active': form_data['is_active']
     }
 
-    print(data)
-    print(form_data)
     try:
         validator(data)
     except Invalid as e:
+        print('Error while validating farmer')
+        print(e)
         last_error = e.msg
         return 1
     return 0
@@ -333,7 +335,6 @@ def update_farmer(data):
         print(e)
         last_error = 'Error while executing the query'
         return 1
-
     return 0
 
 
@@ -488,6 +489,95 @@ def update_cow(data):
             return 1
     return 0
 
+
+def global_search(criteria):
+    cursor = db1.cursor()
+    # search from the farmers table
+    query = """
+    select id, name, hh_id, location_district as hub, mobile_no, mobile_no2
+    from farmer
+    where name like '%s' or hh_id like '%s' or location_district like '%s' or mobile_no like '%s' or mobile_no2 like '%s'
+    order by name
+    """
+    cr = '%' + criteria + '%'
+    vals = (cr, cr, cr, cr, cr)
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        return json.jsonify({'error': True, 'msg': 'There was an error while fetching data from the database'})
+    farmers = cursor.fetchall()
+
+    suggestions = []
+    for f in farmers:
+        f['hhid1'] = '' if f['hh_id'] is None else f['hh_id']
+        f['mobile2'] = '' if f['mobile_no2'] is None else f['mobile_no2']
+        value = "Farmer: %(name)s %(hub)s %(hhid1)s %(mobile_no)s %(mobile2)s" % f
+
+        data = {'category': 'Farmer', 'id': f['id'], 'search': 'global'}
+        suggestions.append({'value': value, 'data': data})
+
+    # search from the cows table
+    query = """
+    select id, farmer_id, old_farmer_id, name, ear_tag_number as ear_tag
+    from cow
+    where name like '%s' or ear_tag_number like '%s'
+    order by name
+    """
+    cr = '%' + criteria + '%'
+    vals = (cr, cr)
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        return json.jsonify({'error': True, 'msg': 'There was an error while fetching data from the database'})
+    cows = cursor.fetchall()
+
+    for c in cows:
+        c['ear_tag1'] = '' if c['ear_tag'] is None else c['ear_tag']
+        c['farmer_id'] = c['old_farmer_id'] if c['farmer_id'] == 0 else c['farmer_id']
+        value = "Cow: %(name)s %(ear_tag1)s" % c
+        data = {'category': 'Cow', 'id': c['id'], 'search': 'global', 'farmer_id': c['farmer_id']}
+        suggestions.append({'value': value, 'data': data})
+
+    # search from the cfs table
+    query = """
+    select id, name, mobile_no
+    from extension_personnel
+    where name like '%s' or mobile_no like '%s'
+    order by name
+    """
+    cr = '%' + criteria + '%'
+    vals = (cr, cr)
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        return json.jsonify({'error': True, 'msg': 'There was an error while fetching data from the database'})
+    cfs = cursor.fetchall()
+
+    for c in cfs:
+        value = "CF: %(name)s %(mobile_no)s" % c
+        data = {'category': 'CF', 'id': c['id'], 'search': 'global'}
+        suggestions.append({'value': value, 'data': data})
+
+    return suggestions
+
+
+@app.route('/add_new_templates', methods=['POST'])
+@login_required
+def add_new_templates():
+    template = render_template('add_new_template.html', form=Form())
+    return json.jsonify({'error': False, 'template': template})
+
+@app.route('/edit_template', methods=['POST'])
+@login_required
+def edit_template():
+    template = render_template('farmer_edit.html', form=Form())
+    return json.jsonify({'error': False, 'template': template})
 
 @app.route('/cow_stats')
 @login_required

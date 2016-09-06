@@ -16,15 +16,37 @@ function NppDash(){
 }
 
 /**
+ * A jQuery addition to add Regex selection capacity
+ */
+jQuery.expr[':'].regex = function (elem, index, match) {
+    var matchParams = match[3].split(','),
+          validLabels = /^(data|css):/,
+          attr = {
+              method: matchParams[0].match(validLabels) ?
+                    matchParams[0].split(':')[0] : 'attr',
+              property: matchParams.shift().replace(validLabels, '')
+          },
+    regexFlags = 'ig',
+          regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g, ''), regexFlags);
+    return regex.test(jQuery(elem)[attr.method](attr.property));
+};
+
+/**
  * Format the autocomplete suggestions
  */
 NppDash.prototype.fnFormatResult = function (value, searchString) {
     var pattern = '(' + searchString.replace(npp.reEscape, '\\$1') + ')';
-    return value.data.replace(new RegExp(pattern, 'gi'), '<strong>$1<\/strong>');
+    return value.value.replace(new RegExp(pattern, 'gi'), '<strong>$1<\/strong>');
 };
 
-NppDash.prototype.confirmSelection = function () {
+NppDash.prototype.confirmSelection = function (selected) {
     console.log('Confirm the selection made...');
+    console.log(selected.value);
+    console.log(selected.data);
+
+    if(selected.data.search === 'global'){
+        npp.globalEditing(selected.data);
+    }
 };
 
 /**
@@ -122,6 +144,9 @@ NppDash.prototype.initiateFarmersTree = function(){
     });
 
     $("#context_menu").on('itemclick', npp.implementRightClick);
+
+    // initiate global search
+    npp.initiateAutocomplete('search_field', 'global_search');
 };
 
 /**
@@ -301,8 +326,10 @@ NppDash.prototype.configureEditAutocomplete = function (module) {
  */
 NppDash.prototype.initiateAutocomplete = function (input_id, sub_module) {
     console.log('Set autocomplete for ' + input_id);
+    var width;
+    (input_id === 'search_field') ? width = 400 : width = 190;
     var settings = {
-        serviceUrl: $SCRIPT_ROOT + "/autocomplete", minChars: 1, maxHeight: 400, width: 190,
+        serviceUrl: $SCRIPT_ROOT + "/autocomplete", minChars: 1, maxHeight: 400, width: width,
         zIndex: 9999, deferRequestBy: 300, //miliseconds
         params: {resource: sub_module}, //aditional parameters
         noCache: true, //default is false, set to true to disable caching
@@ -361,6 +388,8 @@ NppDash.prototype.startFarmerEditing = function(){
                     } else {
                         $('#farmer_editing').clearForm();
                         $('#edit_farmer').addClass('hidden');
+                        // reload the grid
+                        npp.editFarmer();
                         console.log('All saved successfully');
                         npp.showNotification(data.msg, 'success');
                     }
@@ -506,20 +535,36 @@ NppDash.prototype.toggleFarmerStatus = function(){
     });
 };
 
-var npp = new NppDash();
+NppDash.prototype.globalEditing = function(data){
+    // check if we have the editing template, if not load it
+    if($('#add_new').length === 0){
+        npp.loadTemplate("/edit_template");
+    }
+    if(data.category === 'Farmer'){
+        npp.curFarmerId = data.id;
+        npp.editFarmer();
+    }
+    else if(data.category === 'Cow'){
+        npp.curFarmerId = data.farmer_id;
+        npp.editFarmer();
+    }
+};
 
-/**
- * A jQuery addition to add Regex selection capacity
- */
-jQuery.expr[':'].regex = function (elem, index, match) {
-    var matchParams = match[3].split(','),
-          validLabels = /^(data|css):/,
-          attr = {
-              method: matchParams[0].match(validLabels) ?
-                    matchParams[0].split(':')[0] : 'attr',
-              property: matchParams.shift().replace(validLabels, '')
-          },
-    regexFlags = 'ig',
-          regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g, ''), regexFlags);
-    return regex.test(jQuery(elem)[attr.method](attr.property));
-}
+NppDash.prototype.loadTemplate = function(template_path){
+    var data = {};
+    $.ajax({
+        type: "POST", url: $SCRIPT_ROOT + template_path, contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
+        error: npp.communicationError,
+        success: function (data) {
+            if (data.error) {
+                npp.showNotification(data.msg, 'error');
+                return;
+            } else {
+                console.log('Templattes loaded well.... lets update the form');
+                $('#details_panel').html(data.template);
+            }
+        }
+    });
+};
+
+var npp = new NppDash();
