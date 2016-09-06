@@ -137,9 +137,26 @@ def autocomplete_options():
         suggestions = all_milking_statuses(criteria)
     elif(option == 'global_search'):
         suggestions = global_search(criteria)
+    elif(option == 'farmer'):
+        suggestions = all_farmers(criteria)
 
     to_return = {'query': criteria, 'suggestions': suggestions}
     return json.jsonify(to_return)
+
+
+def all_farmers(criteria):
+    cursor = db1.cursor()
+    query = """
+    select id, name from farmer where name like '%s' order by name
+    """
+
+    cursor.execute(query % ('%' + criteria + '%'))
+    farmers = cursor.fetchall()
+    suggestions = []
+    for f in farmers:
+        data = {'id': f['id'], 'name': f['name'], 'module': 'farmers'}
+        suggestions.append({'data': data, 'value': f['name']})
+    return suggestions
 
 
 def all_cfs(criteria):
@@ -291,7 +308,7 @@ def validate_farmer(form_data):
     validator = Schema({
         Required('csrf_token'): All(str),
         'farmer_id': All(int, msg='Invalid farmer id. Stop tampering with the system.'),
-        Required('farmer_name'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
+        Required('farmer_name'): All(str, Length(min=7, max=25), msg='The farmer name should have 7-25 characters'),
         Required('mobile_no'): All(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'")),
         'mobile_no1': Any(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'"), ''),
         Required('cf'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
@@ -344,7 +361,7 @@ def save_new_farmer(data):
         farmer(name, mobile_no, location_district, gps_latitude, gps_longitude, extension_personnel_id, pref_locale, is_active, mobile_no2)
         values('%s',  '%s', '%s', '%s', '%s', %d, '%s', %d, '%s')
     """
-    vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lon'], data['gps_lat'],
+    vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lat'], data['gps_lon'],
 			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'])
 
     try:
@@ -424,17 +441,25 @@ def save_cow():
     print('Normalisation passed')
 
     # since we have the cow_id, update the cow details
-    update_cow(form_data)
+    if 'cow_id' in form_data:
+        ret = update_cow(form_data)
+        if(ret == 1):
+            return json.jsonify({'error': True, 'msg': last_error})
+    else:
+        ret = save_new_cow(form_data)
+        if(ret == 1):
+            return json.jsonify({'error': True, 'msg': last_error})
+
     db1.commit()
     print('Cow updated.... ')
-    return json.jsonify({'error': False, 'msg': 'Cow updated successfully'})
+    return json.jsonify({'error': False, 'msg': 'Cow saved successfully'})
 
 
 def validate_cow(form_data):
     # define our constraints
     validator = Schema({
         Required('farmer_id'): All(int, msg='Missing farmer id. Stop tampering with the system.'),
-        Required('cow_id'): All(int, msg='Missing cow id. Stop tampering with the system.'),
+        'cow_id': All(int, msg='Missing cow id. Stop tampering with the system.'),
         Required('cow_name'): All(str, Length(min=3, max=15), msg='The cow name should have 3-15 characters'),
         Required('breed_group'): All(str, Length(min=5, max=15), msg='The breed name should have 5-15 characters'),
         Required('csrf_token'): All(str),
@@ -450,7 +475,6 @@ def validate_cow(form_data):
     })
 
     form_data['parity'] = int(form_data['parity'])
-    print(form_data)
     try:
         validator(form_data)
     except Invalid as e:
@@ -475,6 +499,7 @@ def normalise_cow(data):
             print('Expecting for all cows to have a milking status')
             return 1
     return data
+
 
 def update_cow(data):
     cursor = db1.cursor()
@@ -509,6 +534,26 @@ def update_cow(data):
     return 0
 
 
+def save_new_cow(data):
+    cursor = db1.cursor()
+    query = """
+        insert into
+        cow(farmer_id, name, ear_tag_number, date_of_birth, sex, breed_group, milking_status, in_calf, parity)
+        values(%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d)
+    """
+    vals = (data['farmer_id'], data['cow_name'], data['ear_tag'], data['dob'], data['sex'], data['breed_group'],
+			data['milking_status'], data['is_incalf'], data['parity'])
+
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        last_error = 'Error while executing the query'
+        return 1
+    return 0
+
+
 def global_search(criteria):
     cursor = db1.cursor()
     # search from the farmers table
@@ -534,7 +579,7 @@ def global_search(criteria):
         f['mobile2'] = '' if f['mobile_no2'] is None else f['mobile_no2']
         value = "Farmer: %(name)s %(hub)s %(hhid1)s %(mobile_no)s %(mobile2)s" % f
 
-        data = {'category': 'Farmer', 'id': f['id'], 'search': 'global'}
+        data = {'category': 'Farmer', 'id': f['id'], 'module': 'global_search'}
         suggestions.append({'value': value, 'data': data})
 
     # search from the cows table
@@ -558,7 +603,7 @@ def global_search(criteria):
         c['ear_tag1'] = '' if c['ear_tag'] is None else c['ear_tag']
         c['farmer_id'] = c['old_farmer_id'] if c['farmer_id'] == 0 else c['farmer_id']
         value = "Cow: %(name)s %(ear_tag1)s" % c
-        data = {'category': 'Cow', 'id': c['id'], 'search': 'global', 'farmer_id': c['farmer_id']}
+        data = {'category': 'Cow', 'id': c['id'], 'module': 'global_search', 'farmer_id': c['farmer_id']}
         suggestions.append({'value': value, 'data': data})
 
     # search from the cfs table
@@ -580,7 +625,7 @@ def global_search(criteria):
 
     for c in cfs:
         value = "CF: %(name)s %(mobile_no)s" % c
-        data = {'category': 'CF', 'id': c['id'], 'search': 'global'}
+        data = {'category': 'CF', 'id': c['id'], 'module': 'global_search'}
         suggestions.append({'value': value, 'data': data})
 
     return suggestions

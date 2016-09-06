@@ -44,8 +44,11 @@ NppDash.prototype.confirmSelection = function (selected) {
     console.log(selected.value);
     console.log(selected.data);
 
-    if(selected.data.search === 'global'){
+    if(selected.data.module === 'global_search'){
         npp.globalEditing(selected.data);
+    }
+    else if(selected.data.module === 'farmers'){
+        npp.curFarmerId = selected.data.id;
     }
 };
 
@@ -118,9 +121,6 @@ NppDash.prototype.initiateFarmersTree = function(){
         var item = $('#tree_panel').jqxTree('getItem', event.currentTarget.parentElement);
         var rightClick = npp.isRightClick(event);
 
-        console.log('Parent Id: '+ item.parentId);
-        console.log('Item Id: '+ item.id);
-        console.log('Item Id, is active: '+ item.is_active);
         if (rightClick && item.parentId !== 0) {
             console.log('We have a right click on a farmer node');
             npp.curFarmerId = item.id;
@@ -397,10 +397,14 @@ NppDash.prototype.farmerSaveCancelButtons = function(){
                         return;
                     } else {
                         $('#farmer_editing').clearForm();
-                        $('#edit_farmer').addClass('hidden');
-                        // reload the grid
-                        if(npp.curFarmerId !== undefined){
+                        if(npp.currentFarmer !== undefined){
+                            // reload the grid if we were adding a new farmer
                             npp.editFarmer();
+                            $('#edit_farmer').addClass('hidden');
+                        }
+                        else{
+                            $('#add_farmer').addClass('hidden');
+                            npp.curFarmerId = undefined;
                         }
                         console.log('All saved successfully');
                         npp.showNotification(data.msg, 'success');
@@ -451,7 +455,7 @@ NppDash.prototype.startCowEditing = function () {
         $('[name=is_incalf]').prop('disabled', true);
     }
 
-    npp.currentCow = cow;
+    npp.currentCowId = cow.cow_id;
     $('#edit_cow').removeClass('hidden');
     if(cow.dob !== null){
         dob = new Date(cow.dob);
@@ -464,8 +468,17 @@ NppDash.prototype.startCowEditing = function () {
     }
 
     npp.configureEditAutocomplete('cow');
+    npp.cowSaveCancelButtons();
+};
+
+/**
+ * Bind the save/cancel buttons of add a new cow form
+ * @returns {undefined}
+ */
+NppDash.prototype.cowSaveCancelButtons = function(){
     $('#cow_cancel').on('click', function(){
-        npp.currentCow = undefined;
+        console.log('Cancelling a cow');
+        npp.currentCowId = undefined;
         $('#cow_editing').clearForm();
         $('#edit_cow').addClass('hidden');
     });
@@ -477,8 +490,8 @@ NppDash.prototype.startCowEditing = function () {
         } else {
             console.log('All looks good... so create the ajax request');
             var data = $('#cow_editing').serializeObject();
-            data.cow_id = npp.currentCow.cow_id;
-            data.farmer_id = npp.currentFarmer.farmer.farmer_id;
+            data.cow_id = npp.currentCowId;
+            data.farmer_id = npp.curFarmerId;
 
             var request = $.ajax({
                 type: "POST", url: $SCRIPT_ROOT + "/save_cow", contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
@@ -489,9 +502,18 @@ NppDash.prototype.startCowEditing = function () {
                         return;
                     } else {
                         $('#cow_editing').clearForm();
-                        $('#edit_cow').addClass('hidden');
                         console.log('All saved successfully..now refresh the page');
-                        npp.editFarmer();
+                        if(npp.currentFarmer !== undefined){
+                            // we were editing a farmer
+                            $('#edit_cow').addClass('hidden');
+                            npp.editFarmer();
+                        }
+                        else{
+                            // we were adding a new farmer
+                            $('#add_cow').addClass('hidden');
+                            npp.curFarmerId = undefined;
+                            npp.currentCowId = undefined;
+                        }
                         npp.showNotification(data.msg, 'success');
                     }
                 }
@@ -592,6 +614,9 @@ NppDash.prototype.startAddNew = function(){
     if(this.id === 'add_new_farmer'){
         npp.addNewFarmer();
     }
+    else if(this.id === 'add_new_cow'){
+        npp.addNewCow();
+    }
 };
 
 /**
@@ -605,6 +630,18 @@ NppDash.prototype.addNewFarmer = function(){
     npp.configureEditAutocomplete('farmer');
     npp.curFarmerId = undefined;
     npp.farmerSaveCancelButtons();
+};
+
+NppDash.prototype.addNewCow = function(){
+    // prepare the interface for adding new cows
+    console.log('Adding a new cow')
+    $('#add_cow').removeClass('hidden');
+    npp.configureEditAutocomplete('cow');
+    npp.curFarmerId = undefined;
+    npp.currentCowId = undefined;
+    npp.cowSaveCancelButtons();
+    // bind the farmer field to autocomplete
+    npp.initiateAutocomplete('farmer_id', 'farmer')
 };
 
 var npp = new NppDash();
