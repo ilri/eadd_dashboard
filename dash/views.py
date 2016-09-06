@@ -231,11 +231,19 @@ def save_farmer():
     print(form_data)
     print('Normalisation passed')
 
-    # since we have the farmer_id, it means we have a new farmer, so update the farmer
-    update_farmer(form_data)
+    if 'farmer_id' not in form_data:
+        # save a new farmer
+        ret = save_new_farmer(form_data)
+        if(ret == 1):
+            return json.jsonify({'error': True, 'msg': last_error})
+    else:
+        # since we have the farmer_id, it means we have a new farmer, so update the farmer
+        ret = update_farmer(form_data)
+        if(ret == 1):
+            return json.jsonify({'error': True, 'msg': last_error})
     db1.commit()
-    print('Farmer updated.... ')
-    return json.jsonify({'error': False, 'msg': 'Farmer updated successfully'})
+    print('Farmer saved/updated.... ')
+    return json.jsonify({'error': False, 'msg': 'Farmer saved successfully'})
 
 
 def normalise_farmer(data):
@@ -281,7 +289,8 @@ def normalise_farmer(data):
 def validate_farmer(form_data):
     # define our constraints
     validator = Schema({
-        Required('farmer_id'): All(int, msg='Missing farmer id. Stop tampering with the system.'),
+        Required('csrf_token'): All(str),
+        'farmer_id': All(int, msg='Invalid farmer id. Stop tampering with the system.'),
         Required('farmer_name'): All(str, Length(min=7, max=20), msg='The farmer name should have 7-20 characters'),
         Required('mobile_no'): All(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'")),
         'mobile_no1': Any(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'"), ''),
@@ -294,21 +303,11 @@ def validate_farmer(form_data):
     })
 
     # format our data
-    data = {
-        'farmer_id': int(form_data['farmer_id']),
-        'farmer_name': str(form_data['farmer_name']),
-        'mobile_no': form_data['mobile_no'],
-        'mobile_no1': form_data['mobile_no1'],
-        'cf': form_data['cf'],
-        'hub': form_data['hub'],
-        'locale': form_data['locale'],
-        'gps_lat': form_data['gps_lat'],
-        'gps_lon': form_data['gps_lon'],
-        'is_active': form_data['is_active']
-    }
+    if 'farmer_id' in form_data:
+        form_data['farmer_id'] = int(form_data['farmer_id'])
 
     try:
-        validator(data)
+        validator(form_data)
     except Invalid as e:
         print('Error while validating farmer')
         print(e)
@@ -327,6 +326,26 @@ def update_farmer(data):
     """
     vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lon'], data['gps_lat'],
 			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], int(data['farmer_id']))
+
+    try:
+        cursor.execute(query % vals)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", vals)
+        print(e)
+        last_error = 'Error while executing the query'
+        return 1
+    return 0
+
+
+def save_new_farmer(data):
+    cursor = db1.cursor()
+    query = """
+        insert into
+        farmer(name, mobile_no, location_district, gps_latitude, gps_longitude, extension_personnel_id, pref_locale, is_active, mobile_no2)
+        values('%s',  '%s', '%s', '%s', '%s', %d, '%s', %d, '%s')
+    """
+    vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lon'], data['gps_lat'],
+			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'])
 
     try:
         cursor.execute(query % vals)
@@ -567,7 +586,7 @@ def global_search(criteria):
     return suggestions
 
 
-@app.route('/add_new_templates', methods=['POST'])
+@app.route('/add_new_template', methods=['POST'])
 @login_required
 def add_new_templates():
     template = render_template('add_new_template.html', form=Form())

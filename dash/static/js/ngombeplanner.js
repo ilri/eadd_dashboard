@@ -147,6 +147,8 @@ NppDash.prototype.initiateFarmersTree = function(){
 
     // initiate global search
     npp.initiateAutocomplete('search_field', 'global_search');
+    // bind the add new ... links
+    $("#add_new_farmer, #add_new_cow, #add_new_cf").on('click', npp.startAddNew);
 };
 
 /**
@@ -364,7 +366,15 @@ NppDash.prototype.startFarmerEditing = function(){
    }
    $('#edit_farmer').removeClass('hidden');
    npp.configureEditAutocomplete('farmer');
-   $('#cancel_farmer').on('click', function(){
+   npp.farmerSaveCancelButtons();
+};
+
+/**
+ * Bind the save and cancel buttons of a farmer form
+ * @returns {undefined}
+ */
+NppDash.prototype.farmerSaveCancelButtons = function(){
+    $('#cancel_farmer').on('click', function(){
         $('#farmer_editing').clearForm();
         $('#edit_farmer').addClass('hidden');
    });
@@ -389,7 +399,9 @@ NppDash.prototype.startFarmerEditing = function(){
                         $('#farmer_editing').clearForm();
                         $('#edit_farmer').addClass('hidden');
                         // reload the grid
-                        npp.editFarmer();
+                        if(npp.curFarmerId !== undefined){
+                            npp.editFarmer();
+                        }
                         console.log('All saved successfully');
                         npp.showNotification(data.msg, 'success');
                     }
@@ -398,7 +410,7 @@ NppDash.prototype.startFarmerEditing = function(){
             return false;
         }
     });
-};
+}
 
 /**
  * Start editing the cow details
@@ -515,6 +527,10 @@ NppDash.prototype.toggleCowStatus = function(){
     });
 };
 
+/**
+ * Activate/Deactivate the status of a farmer
+ * @returns {undefined}
+ */
 NppDash.prototype.toggleFarmerStatus = function(){
     var f = npp.currentFarmer.farmer;
     var is_active = (f.is_active === 'Yes') ? 'no' : 'yes';
@@ -537,7 +553,7 @@ NppDash.prototype.toggleFarmerStatus = function(){
 
 NppDash.prototype.globalEditing = function(data){
     // check if we have the editing template, if not load it
-    if($('#add_new').length === 0){
+    if($('#farmer_details').length === 0){
         npp.loadTemplate("/edit_template");
     }
     if(data.category === 'Farmer'){
@@ -553,7 +569,7 @@ NppDash.prototype.globalEditing = function(data){
 NppDash.prototype.loadTemplate = function(template_path){
     var data = {};
     $.ajax({
-        type: "POST", url: $SCRIPT_ROOT + template_path, contentType: "application/json", dataType: 'json', data: JSON.stringify(data),
+        type: "POST", url: $SCRIPT_ROOT + template_path, contentType: "application/json", dataType: 'json', data: JSON.stringify(data), async: false,
         error: npp.communicationError,
         success: function (data) {
             if (data.error) {
@@ -565,6 +581,30 @@ NppDash.prototype.loadTemplate = function(template_path){
             }
         }
     });
+};
+
+NppDash.prototype.startAddNew = function(){
+    // check if we have the add new template, if not load it
+    if($('#add_new').length === 0){
+        npp.loadTemplate("/add_new_template");
+    }
+    console.log(this.id);
+    if(this.id === 'add_new_farmer'){
+        npp.addNewFarmer();
+    }
+};
+
+/**
+ * Start the process of adding a new farmer
+ * @returns {undefined}
+ */
+NppDash.prototype.addNewFarmer = function(){
+    // prepare the interface for adding new farmers
+    console.log('Adding a new farmer')
+    $('#add_farmer').removeClass('hidden');
+    npp.configureEditAutocomplete('farmer');
+    npp.curFarmerId = undefined;
+    npp.farmerSaveCancelButtons();
 };
 
 var npp = new NppDash();
