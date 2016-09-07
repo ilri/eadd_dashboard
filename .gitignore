@@ -5,3 +5,4 @@ flask
 __pycache__
 bower
 nb-configuration.xml
+config.py
