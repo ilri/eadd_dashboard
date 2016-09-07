@@ -297,6 +297,18 @@ def normalise_farmer(data):
             return 0
         data['cf'] = cf['id']
 
+    # get the project based on the farmer hub
+    query = 'select project from farmer where location_district = "%s"'
+    try:
+        cursor.execute(query % (data['hub']))
+        project = cursor.fetchone()
+    except Exception as e:
+        print("\nError while running\n", query, "\nData:\n", data['hub'])
+        print(e)
+        last_error = 'Error while executing the query'
+        return 0
+    data['project'] = project['project']
+
     # normalise whether the farmer is active
     if(data['is_active'].isalpha()):
         data['is_active'] = 1 if data['is_active'] == 'yes' else 0
@@ -339,11 +351,11 @@ def update_farmer(data):
     query = """
         update farmer set
             name ='%s', mobile_no = '%s', location_district = '%s', gps_longitude = '%s', gps_latitude = '%s',
-            extension_personnel_id = %d, pref_locale = '%s', is_active = %d, mobile_no2 = '%s'
+            extension_personnel_id = %d, pref_locale = '%s', is_active = %d, mobile_no2 = '%s', project = '%s'
         where id = %d
     """
     vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lon'], data['gps_lat'],
-			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], int(data['farmer_id']))
+			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], data['project'], int(data['farmer_id']))
 
     try:
         cursor.execute(query % vals)
@@ -359,12 +371,12 @@ def save_new_farmer(data):
     cursor = db1.cursor()
     query = """
         insert into
-        farmer(name, mobile_no, location_district, gps_latitude, gps_longitude, extension_personnel_id, pref_locale, is_active, mobile_no2, date_added)
-        values('%s',  '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s')
+        farmer(name, mobile_no, location_district, gps_latitude, gps_longitude, extension_personnel_id, pref_locale, is_active, mobile_no2, date_added, project)
+        values('%s',  '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%s')
     """
     now = datetime.now().strftime('%Y-%m-%d %H:%i:%s')
     vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lat'], data['gps_lon'],
-			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], now)
+			int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], now, data['project'])
 
     try:
         cursor.execute(query % vals)

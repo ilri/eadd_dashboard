@@ -422,6 +422,7 @@ NppDash.prototype.farmerSaveCancelButtons = function(){
                         return;
                     } else {
                         $('#farmer_editing').clearForm();
+                        $('#search_global').val('');
                         if(npp.currentFarmer !== undefined){
                             // reload the grid if we were adding a new farmer
                             npp.editFarmer();
