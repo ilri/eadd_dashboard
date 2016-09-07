@@ -1,24 +1,18 @@
 from setuptools import setup, find_packages
 
 setup (
-       name='eadd_web_dashboard',
-       version='0.1',
-       packages=find_packages(),
+    name='EADD Web Dashboard',
+    version='0.1',
 
-       # Declare your packages' dependencies here, for eg:
-       install_requires=['foo>=3'],
+    # find the packages automatically
+    packages=find_packages(),
+    include_package_data=True,
 
-       # Fill in these to make your Egg ready for upload to
-       # PyPI
-       author='Wangoru Kihara',
-       author_email='soloincc@gmail.com',
+    author='Wangoru Kihara',
+    author_email='soloincc@gmail.com',
 
-       #summary = 'Just another Python package for the cheese shop',
-       url='',
-       license='GPLv3',
-       long_description='A web dashboard for the administration of EADD longitudinal survey',
-
-       # could also include long_description, download_url, classifiers, etc.
-
-
-       )
+    #summary = 'Just another Python package for the cheese shop',
+    url='',
+    license='GPLv3',
+    long_description='A web dashboard for administration of EADD longitudinal survey platform',
+)

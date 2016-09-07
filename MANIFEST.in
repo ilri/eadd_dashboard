@@ -1,0 +1,4 @@
+recursive-include dash/templates *
+recursive-include dash/static/js *
+recursive-include dash/static/styles *
+recursive-include dash/static/images *
