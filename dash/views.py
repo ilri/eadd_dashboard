@@ -4,15 +4,31 @@ from flask_wtf import Form
 from voluptuous import Schema, Required, Invalid, All, Match, Length, Any
 from datetime import datetime
 
-from dash import app, db1
+from dash import app
 from dash.models import User
 from dash.pwutils import verify_password
 
 from .login import LoginForm
+import MySQLdb
+import MySQLdb.cursors
 
 import sys
 
 last_error = ''
+
+def connect_db():
+    dbhost = app.config['DBHOST']
+    dbname = app.config['DBNAME']
+    dbuser = app.config['DBUSERNAME']
+    dbpass = app.config['DBPASSWORD']
+    dbport = app.config['DBPORT']
+    db1 = MySQLdb.connect(host = dbhost, port=dbport, user=dbuser, passwd=dbpass, db=dbname, cursorclass=MySQLdb.cursors.DictCursor)
+    return db1
+
+
+def close_db_connections():
+    # cursor.close()
+    return False
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -22,7 +38,7 @@ def show_login():
         username = loginform.username.data
         password = loginform.password.data
         user = User.query.filter_by(username=username).first()
-        print(user)
+        # print(user)
 
         if user == None:
             return render_template('login.html',
@@ -56,6 +72,7 @@ def user_logout():
 @app.route('/dashboard')
 @login_required
 def show_dashboard():
+    db1 = connect_db()
     cursor = db1.cursor()
     # get all the locations
     query = """
@@ -67,7 +84,17 @@ def show_dashboard():
     group by location_district
     order by project, location_district
     """
-    cursor.execute(query)
+
+    try:
+        cursor.execute(query)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\n")
+        print(e)
+
     res = cursor.fetchall()
 
     # get all the farmers
@@ -79,16 +106,28 @@ def show_dashboard():
         and extension_personnel_id not in (13,2)  and project like "eadd%"
     order by name
     """
-    cursor.execute(q2)
+
+    try:
+        cursor.execute(q2)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(q2)
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\n")
+        print(e)
+
     res1 = cursor.fetchall()
     res = res + res1
 
+    close_db_connections()
     return render_template('home.html', allfarmers=json.dumps(res))
 
 
 @app.route('/farmer_details', methods=['POST'])
 @login_required
 def farmer_details():
+    db1 = connect_db()
     cursor = db1.cursor()
     form_data = request.get_json()
     farmer_id = int(form_data['farmer_id'])
@@ -99,7 +138,17 @@ def farmer_details():
     from farmer as a inner join extension_personnel as b on a.extension_personnel_id = b.id
     where a.id = %d
     """
-    cursor.execute(query % (farmer_id))
+
+    try:
+        cursor.execute(query % (farmer_id))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % (farmer_id))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", criteria)
+        print(e)
+
     farmer = cursor.fetchone()
 
     #now get the cows belonging to this farmer
@@ -109,14 +158,27 @@ def farmer_details():
     from cow
     where farmer_id = %d or old_farmer_id = %d
     """
-    cursor.execute(query % (farmer_id, farmer_id))
+
+    try:
+        cursor.execute(query % (farmer_id, farmer_id))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % (farmer_id, farmer_id))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", criteria)
+        print(e)
+
     cows = cursor.fetchall()
+
+    close_db_connections()
     return json.jsonify({'farmer': farmer, 'animals': cows})
 
 
 @app.route('/edit_farmer', methods=['GET'])
 @login_required
 def edit_farmer():
+    close_db_connections()
     return render_template('farmer_edit.html', form=Form())
 
 
@@ -142,91 +204,157 @@ def autocomplete_options():
         suggestions = all_farmers(criteria)
 
     to_return = {'query': criteria, 'suggestions': suggestions}
+    close_db_connections()
     return json.jsonify(to_return)
 
 
 def all_farmers(criteria):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
     select id, name from farmer where name like '%s' order by name
     """
 
-    cursor.execute(query % ('%' + criteria + '%'))
+    try:
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", criteria)
+        print(e)
+
     farmers = cursor.fetchall()
     suggestions = []
     for f in farmers:
         data = {'id': f['id'], 'name': f['name'], 'module': 'farmers'}
         suggestions.append({'data': data, 'value': f['name']})
+
     return suggestions
 
 
 def all_cfs(criteria):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
     select id as cf_id, name from extension_personnel where name like '%s' order by name
     """
 
-    cursor.execute(query % ('%' + criteria + '%'))
+    try:
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", criteria)
+        print(e)
+
     cfs = cursor.fetchall()
     suggestions = []
     for cf in cfs:
         suggestions.append({'data': cf['name'], 'value': cf['name']})
+
     return suggestions
 
 
 def all_locales(criteria):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
     select language from locales where prefix like '%s' or language like '%s' order by language
     """
 
-    cursor.execute(query % ('%' + criteria + '%', '%' + criteria + '%'))
+    try:
+        cursor.execute(query % ('%' + criteria + '%', '%' + criteria + '%'))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % ('%' + criteria + '%', '%' + criteria + '%'))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", criteria)
+        print(e)
+
     locales = cursor.fetchall()
     suggestions = []
     for loc in locales:
         suggestions.append({'data': loc['language'], 'value': loc['language']})
+
     return suggestions
 
 
 def all_hubs(criteria):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
     select location_district as hub from farmer where location_district like '%s' group by location_district order by location_district
     """
 
-    cursor.execute(query % ('%' + criteria + '%'))
+    try:
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", criteria)
+        print(e)
+
     hubs = cursor.fetchall()
     suggestions = []
     for hub in hubs:
         suggestions.append({'data': hub['hub'], 'value': hub['hub']})
+
     return suggestions
 
 
 def all_breeds(criteria):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
     select breed_group as breed from cow where breed_group like '%s' group by breed_group order by breed_group
     """
 
-    cursor.execute(query % ('%' + criteria + '%'))
+    try:
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", criteria)
+        print(e)
     breeds = cursor.fetchall()
     suggestions = []
     for breed in breeds:
         suggestions.append({'data': breed['breed'], 'value': breed['breed']})
+
     return suggestions
 
 
 def all_milking_statuses(criteria):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
     select milking_status as milk_status from cow where milking_status like '%s' group by milking_status order by milking_status
     """
 
-    cursor.execute(query % ('%' + criteria + '%'))
+    try:
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % ('%' + criteria + '%'))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", criteria)
+        print(e)
+
     milk_statuses = cursor.fetchall()
     suggestions = []
     for milk_status in milk_statuses:
         suggestions.append({'data': milk_status['milk_status'], 'value': milk_status['milk_status']})
+
     return suggestions
 
 
@@ -238,6 +366,7 @@ def save_farmer():
     print('Validating the passed data for the farmer')
     ret = validate_farmer(form_data)
     if(ret == 1):
+        close_db_connections()
         return json.jsonify({'error': True, 'msg': last_error})
 
     print('Validation passed, now lets save the data')
@@ -246,25 +375,28 @@ def save_farmer():
     form_data = normalise_farmer(form_data)
     if(form_data == 0):
         return json.jsonify({'error': True, 'msg': 'Error while executing the query'})
-    print(form_data)
+    # print(form_data)
     print('Normalisation passed')
 
     if 'farmer_id' not in form_data:
         # save a new farmer
         ret = save_new_farmer(form_data)
         if(ret == 1):
+            close_db_connections()
             return json.jsonify({'error': True, 'msg': last_error})
     else:
         # since we have the farmer_id, it means we have a new farmer, so update the farmer
         ret = update_farmer(form_data)
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
-    db1.commit()
+
     print('Farmer saved/updated.... ')
+    close_db_connections()
     return json.jsonify({'error': False, 'msg': 'Farmer saved successfully'})
 
 
 def normalise_farmer(data):
+    db1 = connect_db()
     cursor = db1.cursor()
     """
     Normalise the data passed from the user, by converting the options to FK, indices etc
@@ -273,6 +405,11 @@ def normalise_farmer(data):
     if(len(data['locale']) != 2):
         query = "select prefix from locales where language = '%s'"
         try:
+            cursor.execute(query % (data['locale']))
+            locale = cursor.fetchone()
+        except (AttributeError, MySQLdb.OperationalError):
+            db1 = connect_db()
+            cursor = db1.cursor()
             cursor.execute(query % (data['locale']))
             locale = cursor.fetchone()
         except Exception as e:
@@ -290,6 +427,12 @@ def normalise_farmer(data):
             cursor.execute(query % (data['cf']))
             cf = cursor.fetchone()
             print(cf)
+        except (AttributeError, MySQLdb.OperationalError):
+            db1 = connect_db()
+            cursor = db1.cursor()
+            cursor.execute(query % (data['cf']))
+            cf = cursor.fetchone()
+            print(cf)
         except Exception as e:
             print("\nError while running\n", query, "\nData:\n", data['cf'])
             print(e)
@@ -300,6 +443,11 @@ def normalise_farmer(data):
     # get the project based on the farmer hub
     query = 'select project from farmer where location_district = "%s"'
     try:
+        cursor.execute(query % (data['hub']))
+        project = cursor.fetchone()
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
         cursor.execute(query % (data['hub']))
         project = cursor.fetchone()
     except Exception as e:
@@ -347,6 +495,7 @@ def validate_farmer(form_data):
 
 
 def update_farmer(data):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
         update farmer set
@@ -359,15 +508,22 @@ def update_farmer(data):
 
     try:
         cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
         last_error = 'Error while executing the query'
         return 1
+
+    db1.commit()
     return 0
 
 
 def save_new_farmer(data):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
         insert into
@@ -380,17 +536,24 @@ def save_new_farmer(data):
 
     try:
         cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
         last_error = 'Error while executing the query'
         return 1
+
+    db1.commit()
     return 0
 
 
 @app.route('/toggle_farmer_status', methods=['POST'])
 @login_required
 def toggle_farmer_status():
+    db1 = connect_db()
     cursor = db1.cursor()
     data = request.get_json()
     data['is_active'] = 1 if data['is_active'] == 'yes' else 0
@@ -398,18 +561,27 @@ def toggle_farmer_status():
     vals = (int(data['is_active']), int(data['farmer_id']))
     try:
         cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
         return json.jsonify({'error': True, 'msg': 'Error while updating the farmer'})
 
     db1.commit()
+    close_db_connections()
     return json.jsonify({'error': False, 'msg': 'The farmer was updated well'})
+
+
+# def toggle_farmer_cow_status(farmer_id, status):
 
 
 @app.route('/toggle_cow_status', methods=['POST'])
 @login_required
 def toggle_cow_status():
+    db1 = connect_db()
     cursor = db1.cursor()
     data = request.get_json()
 
@@ -417,6 +589,10 @@ def toggle_cow_status():
         query = 'update cow set old_farmer_id = %d, farmer_id = 0 where id = %d'
         vals = (int(data['farmer_id']), int(data['cow_id']))
         try:
+            cursor.execute(query % vals)
+        except (AttributeError, MySQLdb.OperationalError):
+            db1 = connect_db()
+            cursor = db1.cursor()
             cursor.execute(query % vals)
         except (AttributeError) as e:
             print("Error occurred while executing:\n", query % "\nVals:\n", vals)
@@ -427,12 +603,17 @@ def toggle_cow_status():
         vals = (int(data['farmer_id']), int(data['cow_id']))
         try:
             cursor.execute(query % vals)
+        except (AttributeError, MySQLdb.OperationalError):
+            db1 = connect_db()
+            cursor = db1.cursor()
+            cursor.execute(query % vals)
         except (AttributeError) as e:
             print("Error occurred while executing:\n", query % "\nVals:\n", vals)
             print(e)
             return json.jsonify({'error': True, 'msg': 'Error while updating the cow status'})
 
     db1.commit()
+    close_db_connections()
     return json.jsonify({'error': False, 'msg': 'The cow was updated well'})
 
 
@@ -464,8 +645,8 @@ def save_cow():
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
 
-    db1.commit()
     print('Cow updated.... ')
+    close_db_connections()
     return json.jsonify({'error': False, 'msg': 'Cow saved successfully'})
 
 
@@ -516,6 +697,7 @@ def normalise_cow(data):
 
 
 def update_cow(data):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
         update cow set
@@ -527,6 +709,10 @@ def update_cow(data):
 			data['milking_status'], data['is_incalf'], data['parity'], int(data['cow_id']))
 
     try:
+        cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
         cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
@@ -540,15 +726,22 @@ def update_cow(data):
         vals = (int(data['farmer_id']), int(data['cow_id']))
         try:
             cursor.execute(query % vals)
+        except (AttributeError, MySQLdb.OperationalError):
+            db1 = connect_db()
+            cursor = db1.cursor()
+            cursor.execute(query % vals)
         except (AttributeError) as e:
             print("Error occurred while executing:\n", query % "\nVals:\n", vals)
             print(e)
             last_error = 'Error while executing the query'
             return 1
+
+    db1.commit()
     return 0
 
 
 def save_new_cow(data):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
         insert into
@@ -561,15 +754,22 @@ def save_new_cow(data):
 
     try:
         cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
         last_error = 'Error while executing the query'
         return 1
+
+    db1.commit()
     return 0
 
 
 def global_search(criteria):
+    db1 = connect_db()
     cursor = db1.cursor()
     # search from the farmers table
     query = """
@@ -581,6 +781,10 @@ def global_search(criteria):
     cr = '%' + criteria + '%'
     vals = (cr, cr, cr, cr, cr)
     try:
+        cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
         cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
@@ -608,6 +812,10 @@ def global_search(criteria):
     vals = (cr, cr)
     try:
         cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
@@ -632,6 +840,10 @@ def global_search(criteria):
     vals = (cr, cr)
     try:
         cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
@@ -649,6 +861,7 @@ def global_search(criteria):
 @app.route('/cf_details', methods=['POST'])
 @login_required
 def cf_details():
+    db1 = connect_db()
     cursor = db1.cursor()
     form_data = request.get_json()
     cf_id = int(form_data['cf_id'])
@@ -659,9 +872,19 @@ def cf_details():
     from extension_personnel as a
     where a.id = %d
     """
-    cursor.execute(query % (cf_id))
+    try:
+        cursor.execute(query % (cf_id))
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % (cf_id))
+    except (AttributeError) as e:
+        print("Error occurred while executing:\n", query % "\nVals:\n", cf_id)
+        print(e)
+
     cf = cursor.fetchone()
 
+    close_db_connections()
     return json.jsonify({'cf': cf})
 
 
@@ -688,8 +911,8 @@ def save_cf():
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
 
-    db1.commit()
     print('CF updated.... ')
+    close_db_connections()
     return json.jsonify({'error': False, 'msg': 'CF saved successfully'})
 
 
@@ -715,6 +938,7 @@ def validate_cf(form_data):
 
 def update_cf(data):
     print('Updating the CF...')
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
         update extension_personnel set
@@ -726,14 +950,21 @@ def update_cf(data):
 
     try:
         cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
         last_error = 'Error while executing the query'
         return 1
 
+    db1.commit()
+
 
 def save_new_cf(data):
+    db1 = connect_db()
     cursor = db1.cursor()
     query = """
         insert into
@@ -746,12 +977,17 @@ def save_new_cf(data):
 
     try:
         cursor.execute(query % vals)
+    except (AttributeError, MySQLdb.OperationalError):
+        db1 = connect_db()
+        cursor = db1.cursor()
+        cursor.execute(query % vals)
     except (AttributeError) as e:
         print("Error occurred while executing:\n", query % "\nVals:\n", vals)
         print(e)
         last_error = 'Error while executing the query'
         return 1
 
+    db1.commit()
 
 
 @app.route('/add_new_template', methods=['POST'])

@@ -162,7 +162,7 @@ NppDash.prototype.implementRightClick = function(event){
             console.log('Editing farmer '+npp.curFarmerId);
             if(npp.currentView === undefined || npp.currentView !== 'edit_farmer'){
                // load the farmer edit panel
-               $('#details_panel').load('/edit_farmer');
+               $('#details_panel').load($SCRIPT_ROOT +'/edit_farmer');
                npp.currentView = 'edit_farmer';
             }
             npp.editFarmer();

@@ -5,7 +5,7 @@ setup (
     version='0.1',
 
     # find the packages automatically
-    packages=find_packages(),
+    install_requires=['flask', 'mysqlclient', 'flask-login', 'flask-wtf', 'flask-babel', 'flask-sqlalchemy', 'voluptuous', 'passlib'],
     include_package_data=True,
 
     author='Wangoru Kihara',

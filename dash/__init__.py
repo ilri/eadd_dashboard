@@ -1,5 +1,4 @@
-import MySQLdb
-import MySQLdb.cursors
+import os
 from flask import Flask
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
@@ -12,16 +11,14 @@ csrf.init_app(app)
 
 # Read database settings from the configuration file
 app.config.from_object('config')
-dbhost = app.config['DBHOST']
-dbname = app.config['DBNAME']
-dbuser = app.config['DBUSERNAME']
-dbpass = app.config['DBPASSWORD']
-dbport = app.config['DBPORT']
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://%s:%s@%s/%s' % (app.config['DBUSERNAME'], app.config['DBPASSWORD'], app.config['DBHOST'], app.config['DBNAME'])
+if os.environ.get('DATABASE_URL') is None:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://%s:%s@%s/%s' % (app.config['DBUSERNAME'], app.config['DBPASSWORD'], app.config['DBHOST'], app.config['DBNAME'])
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
-db1 = MySQLdb.connect(host = dbhost, port=dbport, user=dbuser, passwd=dbpass, db=dbname, cursorclass=MySQLdb.cursors.DictCursor)
 
 login_manager = LoginManager(app)
 

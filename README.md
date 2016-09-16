@@ -2,6 +2,7 @@
 A dashboard for managing participants in the East African Dairy Development (EADD) Continous Cow Productivity (CCP) survey
 
 ## Installation
+Ensure that you have `python-setuptools` installed.
 Clone the project and then execute the command
 ```
 python setup.py install
