@@ -122,7 +122,7 @@ NppDash.prototype.initiateFarmersTree = function(){
         var rightClick = npp.isRightClick(event);
 
         if (rightClick && item.parentId !== 0) {
-            console.log('We have a right click on a farmer node');
+            console.log('We have a right click on a farmer node -- '+ item.id);
             npp.curFarmerId = item.id;
             var scrollTop = $(window).scrollTop();
             var scrollLeft = $(window).scrollLeft();
