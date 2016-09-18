@@ -6,3 +6,6 @@ DBNAME = 'azizi_eadd_np'
 DBUSERNAME = 'root'
 DBPASSWORD = 'admin'
 DBPORT = 3306
+
+NP_PATH = '/www/ngombeplanner'
+DASH_PATH = '/www/eadd_web_dashboard/dash'

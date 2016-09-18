@@ -243,9 +243,9 @@ def edit_template():
 def cow_stats():
     # call the Php API that will generate the download file and then serve it...
 	print('Generating the cow record stats ....')
-	cmd = 'php /www/ngombeplanner/mod_cron.php farmerData cow_stats TRUE TRUE'
+	cmd = 'php %s/mod_cron.php farmerData cow_stats TRUE TRUE' % (app.config['NP_PATH'])
 	subprocess.call(cmd.split())
-	outfile = '/www/ngombeplanner/CowRecordsBreakdown.csv'
+	outfile = "%s/CowRecordsBreakdown.csv" % (app.config['NP_PATH'])
 
 	print('Now lets offer the file for download....')
 	try:
@@ -259,9 +259,9 @@ def cow_stats():
 def farmer_stats():
     # call the Php API that will generate the download file and then serve it...
 	print('Generating the usage stats....')
-	cmd = 'php /www/ngombeplanner/mod_cron.php farmerData stats TRUE TRUE'
+	cmd = 'php %s/mod_cron.php farmerData stats TRUE TRUE' % (app.config['NP_PATH'])
 	subprocess.call(cmd.split())
-	outfile = '/www/ngombeplanner/FarmerParticipationStatistics.csv'
+	outfile = '%s/FarmerParticipationStatistics.csv' % (app.config['NP_PATH'])
 
 	print('Now lets offer the file for download....')
 	try:
@@ -275,7 +275,7 @@ def farmer_stats():
 def dry_cows():
     dry_cows = Queries.dry_cows()
 
-    outfile = "/www/eadd_web_dashboard/dash/DryCows.csv"
+    outfile = "%s/DryCows.csv" % (app.config['DASH_PATH'])
     with open(outfile, "w") as f:
         writer = csv.writer(f)
         writer.writerow(['Project','Hub','Farmer Name','Mobile1','Mobile2','CowId','Cow Name','Ear Tag','CF','CF Mobile','Dry Days'])
