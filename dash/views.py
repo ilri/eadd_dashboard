@@ -244,7 +244,7 @@ def edit_template():
 def cow_stats():
     # call the Php API that will generate the download file and then serve it...
 	print('Generating the cow record stats ....')
-	cmd = 'php %s/mod_cron.php farmerData cow_stats TRUE TRUE' % (app.config['NP_PATH'])
+	cmd = '%s %s/mod_cron.php farmerData cow_stats TRUE TRUE' % (app.config['PHP_PATH'], app.config['NP_PATH'])
 	subprocess.call(cmd.split())
 	outfile = "%s/CowRecordsBreakdown.csv" % (app.config['NP_PATH'])
 
@@ -252,7 +252,7 @@ def cow_stats():
 	try:
 		return send_file(outfile, attachment_filename='CowRecordsBreakdown.csv', as_attachment = True, mimetype='text/csv')
 	except Exception as e:
-		raise str(e)
+		print(e)
 
 
 @app.route('/farmer_stats')
@@ -260,7 +260,7 @@ def cow_stats():
 def farmer_stats():
     # call the Php API that will generate the download file and then serve it...
 	print('Generating the usage stats....')
-	cmd = 'php %s/mod_cron.php farmerData stats TRUE TRUE' % (app.config['NP_PATH'])
+	cmd = '%s %s/mod_cron.php farmerData stats TRUE TRUE' % (app.config['PHP_PATH'], app.config['NP_PATH'])
 	subprocess.call(cmd.split())
 	outfile = '%s/FarmerParticipationStatistics.csv' % (app.config['NP_PATH'])
 
@@ -268,7 +268,7 @@ def farmer_stats():
 	try:
 		return send_file(outfile, attachment_filename='FarmerParticipationStatistics.csv', as_attachment = True, mimetype='text/csv')
 	except Exception as e:
-		raise str(e)
+		print(e)
 
 
 @app.route('/dry_cows')
@@ -285,7 +285,7 @@ def dry_cows():
     try:
         return send_file(outfile, attachment_filename='DryCows.csv', as_attachment = True, mimetype='text/csv')
     except Exception as e:
-        return str(e)
+        print(e)
 
 @app.route('/canned_queries')
 @login_required

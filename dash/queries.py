@@ -12,7 +12,7 @@ db = Dbase(
     app.config['DBNAME']
 )
 
-class Queries():
+class Queries:
 
     def farmer_tree_data(self):
         db.curQuery = """

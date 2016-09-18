@@ -7,5 +7,6 @@ DBUSERNAME = 'root'
 DBPASSWORD = 'admin'
 DBPORT = 3306
 
+PHP_PATH = '/usr/local/bin/php'
 NP_PATH = '/www/ngombeplanner'
 DASH_PATH = '/www/eadd_web_dashboard/dash'
