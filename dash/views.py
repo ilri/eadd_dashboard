@@ -13,6 +13,7 @@ import subprocess
 import csv
 
 last_error = ''
+query = Queries()
 
 @app.route('/', methods=['GET', 'POST'])
 def show_login():
@@ -56,7 +57,7 @@ def user_logout():
 @login_required
 def show_dashboard():
     # get all the data to be used to construct the tree
-    tree_data = Queries.farmer_tree_data()
+    tree_data = query.farmer_tree_data()
     return render_template('home.html', allfarmers=json.dumps(tree_data))
 
 
@@ -65,7 +66,7 @@ def show_dashboard():
 def farmer_details():
     form_data = request.get_json()
     farmer_id = int(form_data['farmer_id'])
-    details = Queries.farmer_details(farmer_id)
+    details = query.farmer_details(farmer_id)
 
     return json.jsonify(details)
 
@@ -83,19 +84,19 @@ def autocomplete_options():
     option = request.args.get('resource')
 
     if(option == 'all_cfs'):
-        suggestions = Queries.all_cfs(criteria)
+        suggestions = query.all_cfs(criteria)
     elif(option == 'all_locale'):
-        suggestions = Queries.all_locales(criteria)
+        suggestions = query.all_locales(criteria)
     elif(option == 'all_hubs'):
-        suggestions = Queries.all_hubs(criteria)
+        suggestions = query.all_hubs(criteria)
     elif(option == 'all_breeds'):
-        suggestions = Queries.all_breeds(criteria)
+        suggestions = query.all_breeds(criteria)
     elif(option == 'milking_statuses'):
-        suggestions = Queries.all_milking_statuses(criteria)
+        suggestions = query.all_milking_statuses(criteria)
     elif(option == 'global_search'):
-        suggestions = Queries.global_search(criteria)
+        suggestions = query.global_search(criteria)
     elif(option == 'farmer'):
-        suggestions = Queries.all_farmers(criteria)
+        suggestions = query.all_farmers(criteria)
 
     to_return = {'query': criteria, 'suggestions': suggestions}
     return json.jsonify(to_return)
@@ -107,14 +108,14 @@ def save_farmer():
     form_data = request.get_json()
 
     print('Validating the passed data for the farmer')
-    ret = Queries.validate_farmer(form_data)
+    ret = query.validate_farmer(form_data)
     if(ret == 1):
         return json.jsonify({'error': True, 'msg': last_error})
 
     print('Validation passed, now lets save the data')
 
     print('Normalise the passed data')
-    form_data = Queries.normalise_farmer(form_data)
+    form_data = query.normalise_farmer(form_data)
     if(form_data == 0):
         return json.jsonify({'error': True, 'msg': 'Error while executing the query'})
     # print(form_data)
@@ -122,12 +123,12 @@ def save_farmer():
 
     if 'farmer_id' not in form_data:
         # save a new farmer
-        ret = Queries.save_new_farmer(form_data)
+        ret = query.save_new_farmer(form_data)
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
     else:
         # since we have the farmer_id, it means we have a new farmer, so update the farmer
-        ret = Queries.update_farmer(form_data)
+        ret = query.update_farmer(form_data)
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
 
@@ -141,7 +142,7 @@ def toggle_farmer_status():
     data = request.get_json()
     data['is_active'] = 1 if data['is_active'] == 'yes' else 0
 
-    Queries.toggle_farmer_status(data)
+    query.toggle_farmer_status(data)
     return json.jsonify({'error': False, 'msg': 'The farmer was updated well'})
 
 
@@ -152,7 +153,7 @@ def toggle_farmer_status():
 @login_required
 def toggle_cow_status():
     data = request.get_json()
-    Queries.toggle_cow_status(data)
+    query.toggle_cow_status(data)
     return json.jsonify({'error': False, 'msg': 'The cow was updated well'})
 
 
@@ -162,13 +163,13 @@ def save_cow():
     form_data = request.get_json()
 
     print('Cow: Validating the passed data')
-    ret = Queries.validate_cow(form_data)
+    ret = query.validate_cow(form_data)
     if(ret == 1):
         return json.jsonify({'error': True, 'msg': last_error})
     print('Cow: Validation passed, now lets save the data')
 
     print('Cow: Normalise the passed data')
-    form_data = Queries.normalise_cow(form_data)
+    form_data = query.normalise_cow(form_data)
     if(form_data == 1):
         return json.jsonify({'error': True, 'msg': last_error})
     print(form_data)
@@ -176,11 +177,11 @@ def save_cow():
 
     # since we have the cow_id, update the cow details
     if 'cow_id' in form_data:
-        ret = Queries.update_cow(form_data)
+        ret = query.update_cow(form_data)
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
     else:
-        ret = Queries.save_new_cow(form_data)
+        ret = query.save_new_cow(form_data)
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
 
@@ -195,7 +196,7 @@ def cf_details():
     cf_id = int(form_data['cf_id'])
 
     # get the cf id details
-    cf = Queries.cf_details(cf_id)
+    cf = query.cf_details(cf_id)
     return json.jsonify({'cf': cf})
 
 
@@ -205,7 +206,7 @@ def save_cf():
     form_data = request.get_json()
 
     print('CF: Validating the passed data')
-    ret = Queries.validate_cf(form_data)
+    ret = query.validate_cf(form_data)
     if(ret == 1):
         return json.jsonify({'error': True, 'msg': last_error})
     print('Cow: Validation passed, now lets save the data')
@@ -214,11 +215,11 @@ def save_cf():
 
     # since we have the cow_id, update the cow details
     if 'cf_id' in form_data:
-        ret = Queries.update_cf(form_data)
+        ret = query.update_cf(form_data)
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
     else:
-        ret = Queries.save_new_cf(form_data)
+        ret = query.save_new_cf(form_data)
         if(ret == 1):
             return json.jsonify({'error': True, 'msg': last_error})
 
@@ -273,7 +274,7 @@ def farmer_stats():
 @app.route('/dry_cows')
 @login_required
 def dry_cows():
-    dry_cows = Queries.dry_cows()
+    dry_cows = query.dry_cows()
 
     outfile = "%s/DryCows.csv" % (app.config['DASH_PATH'])
     with open(outfile, "w") as f:

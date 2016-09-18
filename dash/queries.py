@@ -14,7 +14,7 @@ db = Dbase(
 
 class Queries():
 
-    def farmer_tree_data():
+    def farmer_tree_data(self):
         db.curQuery = """
         select
             location_district as id, location_district as text, "-1" as parentid, 1 as is_active
@@ -39,7 +39,7 @@ class Queries():
 
         return all_locations + all_farmers
 
-    def farmer_details(farmer_id):
+    def farmer_details(self, farmer_id):
         # get the farmer id details
         db.curQuery = """
         select
@@ -60,7 +60,7 @@ class Queries():
         return {'farmer': farmer[0], 'animals': cows}
 
 
-    def all_farmers(criteria):
+    def all_farmers(self, criteria):
         db.curQuery = """
         select id, name from farmer where name like '%s' order by name
         """ % ('%' + criteria + '%')
@@ -75,7 +75,7 @@ class Queries():
         return suggestions
 
 
-    def all_cfs(criteria):
+    def all_cfs(self, criteria):
         db.curQuery = """
         select id as cf_id, name from extension_personnel where name like '%s' order by name
         """ % ('%' + criteria + '%')
@@ -88,7 +88,7 @@ class Queries():
         return suggestions
 
 
-    def all_locales(criteria):
+    def all_locales(self, criteria):
         db.curQuery = """
         select language from locales where prefix like '%s' or language like '%s' order by language
         """ % ('%' + criteria + '%', '%' + criteria + '%')
@@ -101,7 +101,7 @@ class Queries():
         return suggestions
 
 
-    def all_hubs(criteria):
+    def all_hubs(self, criteria):
         db.curQuery = """
         select location_district as hub from farmer where location_district like '%s' group by location_district order by location_district
         """ % ('%' + criteria + '%')
@@ -114,7 +114,7 @@ class Queries():
         return suggestions
 
 
-    def all_breeds(criteria):
+    def all_breeds(self, criteria):
         db.curQuery = """
         select breed_group as breed from cow where breed_group like '%s' group by breed_group order by breed_group
         """ % ('%' + criteria + '%')
@@ -127,7 +127,7 @@ class Queries():
         return suggestions
 
 
-    def all_milking_statuses(criteria):
+    def all_milking_statuses(self, criteria):
         db.curQuery = """
         select milking_status as milk_status from cow where milking_status like '%s' group by milking_status order by milking_status
         """ % ('%' + criteria + '%')
@@ -140,7 +140,7 @@ class Queries():
         return suggestions
 
 
-    def global_search(criteria):
+    def global_search(self, criteria):
         # search from the farmers table
         query = """
         select id, name, hh_id, location_district as hub, mobile_no, mobile_no2
@@ -200,7 +200,7 @@ class Queries():
 
         return suggestions
 
-    def normalise_farmer(data):
+    def normalise_farmer(self, data):
         """
         Normalise the data passed from the user, by converting the options to FK, indices etc
         """
@@ -228,7 +228,7 @@ class Queries():
         return data
 
 
-    def validate_farmer(form_data):
+    def validate_farmer(self, form_data):
         # define our constraints
         validator = Schema({
             Required('csrf_token'): All(str),
@@ -256,7 +256,7 @@ class Queries():
         return 0
 
 
-    def update_farmer(data):
+    def update_farmer(self, data):
         vals = (data['farmer_name'], data['mobile_no'], data['hub'], data['gps_lon'], data['gps_lat'],
                 int(data['cf']), data['locale'], data['is_active'], data['mobile_no1'], data['project'], int(data['farmer_id']))
         db.curQuery = """
@@ -269,7 +269,7 @@ class Queries():
         return 0
 
 
-    def save_new_farmer(data):
+    def save_new_farmer(self, data):
         query = """
             insert into
             farmer(name, mobile_no, location_district, gps_latitude, gps_longitude, extension_personnel_id, pref_locale, is_active, mobile_no2, date_added, project)
@@ -283,7 +283,7 @@ class Queries():
         return 0
 
 
-    def validate_cow(form_data):
+    def validate_cow(self, form_data):
         # define our constraints
         validator = Schema({
             Required('farmer_id'): All(int, msg='Missing farmer id. Stop tampering with the system.'),
@@ -310,7 +310,7 @@ class Queries():
         return 0
 
 
-    def normalise_cow(data):
+    def normalise_cow(self, data):
         """
         Normalise the data passed from the user, by converting the options to FK, indices etc
         """
@@ -327,7 +327,7 @@ class Queries():
         return data
 
 
-    def update_cow(data):
+    def update_cow(self, data):
         query = """
             update cow set
                 name ='%s', ear_tag_number = '%s', date_of_birth = '%s', sex = '%s', breed_group = '%s',
@@ -349,7 +349,7 @@ class Queries():
         return 0
 
 
-    def save_new_cow(data):
+    def save_new_cow(self, data):
         query = """
             insert into
             cow(farmer_id, name, ear_tag_number, date_of_birth, sex, breed_group, milking_status, in_calf, parity, datetime_added)
@@ -364,7 +364,7 @@ class Queries():
         return 0
 
 
-    def validate_cf(form_data):
+    def validate_cf(self, form_data):
         # define our constraints
         validator = Schema({
             Required('csrf_token'): All(str),
@@ -383,7 +383,7 @@ class Queries():
         return 0
 
 
-    def update_cf(data):
+    def update_cf(self, data):
         print('Updating the CF...')
         query = """
             update extension_personnel set
@@ -396,7 +396,7 @@ class Queries():
         db.query()
 
 
-    def save_new_cf(data):
+    def save_new_cf(self, data):
         query = """
             insert into
             extension_personnel(name, mobile_no, mobile_no2, is_super, date_added)
@@ -409,7 +409,7 @@ class Queries():
         db.query()
 
 
-    def cf_details(cf_id):
+    def cf_details(self, cf_id):
         db.curQuery = """
         select
           a.id as cf_id, a.name as cf_name, a.mobile_no, a.mobile_no2, if(is_super = 1, 'Yes', 'No') as is_super
@@ -420,7 +420,7 @@ class Queries():
 
         return cf
 
-    def toggle_cow_status(data):
+    def toggle_cow_status(self, data):
         if(data['is_active'] == 'no'):
             query = 'update cow set old_farmer_id = %d, farmer_id = 0 where id = %d'
             vals = (int(data['farmer_id']), int(data['cow_id']))
@@ -433,14 +433,14 @@ class Queries():
             db.query()
 
 
-    def toggle_farmer_status(data):
+    def toggle_farmer_status(self, data):
         query = 'update farmer set is_active = %d where id = %d'
         vals = (int(data['is_active']), int(data['farmer_id']))
         db.curQuery = query % vals
         db.query()
 
 
-    def dry_cows():
+    def dry_cows(self):
         db.curQuery = """
             select
 				b.*, datediff(now(), event_date) as 'Dry Days'
