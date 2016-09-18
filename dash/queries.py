@@ -437,5 +437,19 @@ class Queries():
         query = 'update farmer set is_active = %d where id = %d'
         vals = (int(data['is_active']), int(data['farmer_id']))
         db.curQuery = query % vals
-
         db.query()
+
+
+    def dry_cows():
+        db.curQuery = """
+            select
+				b.*, datediff(now(), event_date) as 'Dry Days'
+			from cow_event as a inner join (
+				SELECT
+					b.project, b.location_district, b.name as 'Farmer Name', b.mobile_no as 'Mobile1', b.mobile_no2 as 'Mobile2', a.id as 'CowId', a.name as 'Cow Name', a.ear_tag_number as 'Ear Tag', c.name as 'CF', c.mobile_no as 'CF Mobile'
+				FROM cow as a inner join farmer as b on a.farmer_id = b.id inner join extension_personnel as c on b.extension_personnel_id = c.id
+				where b.project in ('eadd_ug') and sex = 'Female' and milking_status = 'adult_not_milking' and b.is_active = 1
+			) as b on a.cow_id =b.CowId and a.event_id = 7 and datediff(now(), event_date) > 20
+		"""
+        dry_cows = db.query()
+        return dry_cows

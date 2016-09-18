@@ -1,6 +1,7 @@
 from flask import render_template, redirect, url_for, request, json
 from flask_login import login_user, logout_user, login_required
 from flask_wtf import Form
+from flask import send_file
 
 from dash import app
 from dash.models import User
@@ -8,6 +9,8 @@ from dash.pwutils import verify_password
 
 from .login import LoginForm
 from .queries import Queries
+import subprocess
+import csv
 
 last_error = ''
 
@@ -135,8 +138,6 @@ def save_farmer():
 @app.route('/toggle_farmer_status', methods=['POST'])
 @login_required
 def toggle_farmer_status():
-    db1 = connect_db()
-    cursor = db1.cursor()
     data = request.get_json()
     data['is_active'] = 1 if data['is_active'] == 'yes' else 0
 
@@ -150,10 +151,7 @@ def toggle_farmer_status():
 @app.route('/toggle_cow_status', methods=['POST'])
 @login_required
 def toggle_cow_status():
-    db1 = connect_db()
-    cursor = db1.cursor()
     data = request.get_json()
-
     Queries.toggle_cow_status(data)
     return json.jsonify({'error': False, 'msg': 'The cow was updated well'})
 
@@ -243,14 +241,50 @@ def edit_template():
 @app.route('/cow_stats')
 @login_required
 def cow_stats():
-    return render_template('pending.html')
+    # call the Php API that will generate the download file and then serve it...
+	print('Generating the cow record stats ....')
+	cmd = 'php /www/ngombeplanner/mod_cron.php farmerData cow_stats TRUE TRUE'
+	subprocess.call(cmd.split())
+	outfile = '/www/ngombeplanner/CowRecordsBreakdown.csv'
+
+	print('Now lets offer the file for download....')
+	try:
+		return send_file(outfile, attachment_filename='CowRecordsBreakdown.csv', as_attachment = True, mimetype='text/csv')
+	except Exception as e:
+		raise str(e)
 
 
 @app.route('/farmer_stats')
 @login_required
 def farmer_stats():
-    return render_template('pending.html')
+    # call the Php API that will generate the download file and then serve it...
+	print('Generating the usage stats....')
+	cmd = 'php /www/ngombeplanner/mod_cron.php farmerData stats TRUE TRUE'
+	subprocess.call(cmd.split())
+	outfile = '/www/ngombeplanner/FarmerParticipationStatistics.csv'
 
+	print('Now lets offer the file for download....')
+	try:
+		return send_file(outfile, attachment_filename='FarmerParticipationStatistics.csv', as_attachment = True, mimetype='text/csv')
+	except Exception as e:
+		raise str(e)
+
+
+@app.route('/dry_cows')
+@login_required
+def dry_cows():
+    dry_cows = Queries.dry_cows()
+
+    outfile = "/www/eadd_web_dashboard/dash/DryCows.csv"
+    with open(outfile, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(['Project','Hub','Farmer Name','Mobile1','Mobile2','CowId','Cow Name','Ear Tag','CF','CF Mobile','Dry Days'])
+        writer.writerows(dry_cows)
+
+    try:
+        return send_file(outfile, attachment_filename='DryCows.csv', as_attachment = True, mimetype='text/csv')
+    except Exception as e:
+        return str(e)
 
 @app.route('/canned_queries')
 @login_required
