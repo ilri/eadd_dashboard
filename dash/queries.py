@@ -491,7 +491,7 @@ class Queries:
 
         # get the hubs
         db.curQuery = """
-            SELECT 'hub', location_district, location_district, location_county FROM farmer where project = 'eadd_tz' group by location_county
+            SELECT 'hub', location_district, location_district, location_county FROM farmer where project = 'eadd_tz' group by location_district
 		"""
         hubs = db.query()
 
@@ -518,10 +518,10 @@ class Queries:
         with open(outfile, "w") as f:
             writer = csv.writer(f)
             writer.writerow(['list_name','name','label','cluster','hub','village','household','sex'])
-            writer.writerows(hubs)
             writer.writerows(clusters)
+            writer.writerows(hubs)
             writer.writerows(villages)
             writer.writerows(households)
             writer.writerows(all_animals)
-            
+
         return outfile
