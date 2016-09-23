@@ -39,10 +39,14 @@
       </ul>
       <ul class="nav navbar-nav">
         <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Publications <span class="caret"></span></a>
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Downloads <span class="caret"></span></a>
           <ul class="dropdown-menu">
               <li><a href="https://cgspace.cgiar.org/bitstream/handle/10568/73341/PR_eadd_phase_ii.pdf" target="_blank">Farmer Recruitment Report</a></li>
             <li><a href="https://cgspace.cgiar.org/handle/10568/2347" target="_blank">EADD in CGSpace</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="{{ url_for('odk_all_animals') }}">ODK: All Animals</a></li>
+            <li><a href="{{ url_for('odk_all_cows') }}">ODK: All Cows</a></li>
+            <li><a href="{{ url_for('odk_external_choices') }}">ODK: External Choices</a></li>
           </ul>
         </li>
       </ul>

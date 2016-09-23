@@ -4,6 +4,8 @@ from datetime import datetime
 from dash import app
 from .sql import Dbase
 
+import csv
+
 # create the db connection
 db = Dbase(
     app.config['DBHOST'],
@@ -453,3 +455,73 @@ class Queries:
 		"""
         dry_cows = db.query()
         return dry_cows
+
+
+    def all_tz_cows(self):
+        db.curQuery = """
+            select
+				b.hh_id as household_id, a.ear_tag_number as animal_name, a.name as animal_label
+			from cow as a inner join farmer as b on a.farmer_id = b.id
+            where b.project = 'eadd_tz' and b.is_active = 1 and a.sex = 'Female'
+            order by a.ear_tag_number
+		"""
+        res = db.query()
+        return res
+
+
+    def all_tz_animals(self):
+        db.curQuery = """
+            select
+				b.hh_id as household_id, a.ear_tag_number as animal_name, a.name as animal_label
+			from cow as a inner join farmer as b on a.farmer_id = b.id
+            where b.project = 'eadd_tz' and b.is_active = 1
+            order by a.ear_tag_number
+		"""
+        res = db.query()
+        return res
+
+
+    def odk_tz_datasets(self, outfile):
+
+        # get the clusters
+        db.curQuery = """
+            SELECT 'cluster', location_county, location_county FROM farmer where project = 'eadd_tz' group by location_county
+		"""
+        clusters = db.query()
+
+        # get the hubs
+        db.curQuery = """
+            SELECT 'hub', location_district, location_district, location_county FROM farmer where project = 'eadd_tz' group by location_county
+		"""
+        hubs = db.query()
+
+        # get the villages
+        db.curQuery = """
+            SELECT 'village', village, village, '', location_district FROM `farmer` where project = 'eadd_tz' group by village order by location_district
+		"""
+        villages = db.query()
+
+        db.curQuery = """
+            SELECT 'household', hh_id, name, '', '', village FROM `farmer` where project = 'eadd_tz' order by hh_id
+        """
+        households = db.query()
+
+        db.curQuery = """
+            SELECT 'all_animals', b.ear_tag_number, b.name, '', '', '', a.hh_id, if(b.sex = 'Male', 'bull', 'lactating cow') as sex
+            FROM `farmer` as a inner join cow as b on a.id = b.farmer_id
+            where project = 'eadd_tz'
+            order by b.ear_tag_number
+        """
+        all_animals = db.query()
+
+
+        with open(outfile, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(['list_name','name','label','cluster','hub','village','household','sex'])
+            writer.writerows(hubs)
+            writer.writerows(clusters)
+            writer.writerows(villages)
+            writer.writerows(households)
+            writer.writerows(all_animals)
+            
+        return outfile

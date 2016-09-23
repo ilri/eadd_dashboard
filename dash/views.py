@@ -291,3 +291,50 @@ def dry_cows():
 @login_required
 def canned_queries():
     return render_template('pending.html')
+
+
+@app.route('/odk_all_animals')
+@login_required
+def odk_all_animals():
+    all_animals = query.all_tz_animals()
+
+    outfile = "%s/all_animals.csv" % (app.config['DASH_PATH'])
+    with open(outfile, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(['household_id','animal_name','animal_label'])
+        writer.writerows(all_animals)
+
+    try:
+        return send_file(outfile, attachment_filename='all_animals.csv', as_attachment = True, mimetype='text/csv')
+    except Exception as e:
+        print(e)
+
+
+@app.route('/odk_all_cows')
+@login_required
+def odk_all_cows():
+    all_cows = query.all_tz_cows()
+
+    outfile = "%s/all_cows.csv" % (app.config['DASH_PATH'])
+    with open(outfile, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(['household_id','animal_name','animal_label'])
+        writer.writerows(all_cows)
+
+    try:
+        return send_file(outfile, attachment_filename='all_cows.csv', as_attachment = True, mimetype='text/csv')
+    except Exception as e:
+        print(e)
+
+
+@app.route('/odk_external_choices')
+@login_required
+def odk_external_choices():
+    # get all clusters
+    outfile = "%s/external_choices.csv" % (app.config['DASH_PATH'])
+    query.odk_tz_datasets(outfile)
+
+    try:
+        return send_file(outfile, attachment_filename='external_choices.csv', as_attachment = True, mimetype='text/csv')
+    except Exception as e:
+        print(e)
