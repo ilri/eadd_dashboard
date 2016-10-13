@@ -50,5 +50,5 @@ class Dbase():
             return db.fetchall()
 
         except:
-            print('Exception: Malformed Query "%s"' % query)
+            print('Exception: Malformed Query "%s"' % self.curQuery)
             raise

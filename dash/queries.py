@@ -219,7 +219,7 @@ class Queries:
             data['cf'] = cf[0]['id']
 
         # get the project based on the farmer hub
-        db.curQuery = 'select project from farmer where location_district = "%s"' % (data['hub'])
+        db.curQuery = "select project from farmer where location_district = '%s'" % (data['hub'])
         project = db.dictQuery()
         data['project'] = project[0]['project']
 
@@ -254,6 +254,7 @@ class Queries:
             validator(form_data)
         except Invalid as e:
             print('Error while validating farmer')
+            print(e)
             raise e.msg
         return 0
 

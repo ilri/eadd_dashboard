@@ -57,7 +57,7 @@
 					<div class="form-group">
 						<label class="col-md-6 control-label" for="gps_lat">HH Latitude&nbsp;&nbsp;<img class='mandatory' src="{{ url_for('static', filename='images/mandatory.gif') }}" /></label>
 						<div class="col-md-6">
-                            <input type="text" required pattern="^\-?\d{1}\.\d{3,10}$" name="gps_lat" id="gps_lat" placeholder="HH Latitude" class='input-medium form-control' />
+                            <input type="text" required pattern="^[-]?\d\.\d{3,10}$" name="gps_lat" id="gps_lat" placeholder="HH Latitude" class='input-medium form-control' />
 						</div>
                         <div class="help-block with-errors"></div>
 					</div>
