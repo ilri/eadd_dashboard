@@ -233,7 +233,7 @@ class Queries:
     def validate_farmer(self, form_data):
         # define our constraints
         validator = Schema({
-            Required('csrf_token'): All(str),
+            Required('csrf_token'): All(unicode),
             'farmer_id': All(int, msg='Invalid farmer id. Stop tampering with the system.'),
             Required('farmer_name'): All(str, Length(min=7, max=25), msg='The farmer name should have 7-25 characters'),
             Required('mobile_no'): All(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'")),
@@ -249,6 +249,13 @@ class Queries:
         # format our data
         if 'farmer_id' in form_data:
             form_data['farmer_id'] = int(form_data['farmer_id'])
+
+        form_data['csrf_token'] = str(form_data['csrf_token'])
+        form_data['farmer_name'] = str(form_data['farmer_name'])
+        form_data['cf'] = str(form_data['cf'])
+        form_data['hub'] = str(form_data['hub'])
+        form_data['locale'] = str(form_data['locale'])
+        form_data['is_active'] = str(form_data['is_active'])
 
         try:
             validator(form_data)
@@ -306,6 +313,15 @@ class Queries:
         })
 
         form_data['parity'] = int(form_data['parity'])
+        form_data['cow_name'] = str(form_data['cow_name'])
+        form_data['breed_group'] = str(form_data['breed_group'])
+        form_data['csrf_token'] = str(form_data['csrf_token'])
+        form_data['ear_tag'] = str(form_data['ear_tag'])
+        form_data['is_active'] = str(form_data['is_active'])
+        form_data['sex'] = str(form_data['sex'])
+        form_data['is_incalf'] = str(form_data['is_incalf'])
+        form_data['milking_status'] = str(form_data['milking_status'])
+
         try:
             validator(form_data)
         except Invalid as e:
@@ -377,6 +393,10 @@ class Queries:
             'cf_mobile_no1': Any(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'"), ''),
             Required('is_super'): All(str, Any('yes', 'no'), msg='Select whether the CF is a super CF or not')
         })
+
+        form_data['csrf_token'] = str(form_data['csrf_token'])
+        form_data['cf_name'] = str(form_data['cf_name'])
+        form_data['is_super'] = str(form_data['is_super'])
 
         try:
             validator(form_data)
