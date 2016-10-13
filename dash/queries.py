@@ -68,7 +68,6 @@ class Queries:
         """ % ('%' + criteria + '%')
         farmers = db.dictQuery()
 
-        farmers = cursor.fetchall()
         suggestions = []
         for f in farmers:
             data = {'id': f['id'], 'name': f['name'], 'module': 'farmers'}
