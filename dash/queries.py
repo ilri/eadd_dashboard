@@ -233,7 +233,7 @@ class Queries:
     def validate_farmer(self, form_data):
         # define our constraints
         validator = Schema({
-            Required('csrf_token'): All(unicode),
+            Required('csrf_token'): All(str),
             'farmer_id': All(int, msg='Invalid farmer id. Stop tampering with the system.'),
             Required('farmer_name'): All(str, Length(min=7, max=25), msg='The farmer name should have 7-25 characters'),
             Required('mobile_no'): All(Match('^(25[456]|0)\d{9}$', msg="Mobile should be like '254700123456'")),
