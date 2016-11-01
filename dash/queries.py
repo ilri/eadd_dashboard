@@ -53,7 +53,7 @@ class Queries:
 
         db.curQuery = """
         select
-          id as cow_id, name as cow_name, ear_tag_number as ear_tag, date_of_birth as dob, sex, breed_group, sire_id, dam_id, milking_status as is_milking, if(in_calf=1,'Yes','No') as is_incalf, parity, if(farmer_id = 0, 'No', 'Yes') as is_active
+          id as cow_id, name as cow_name, ear_tag_number as ear_tag, date_of_birth as dob, sex, breed_group, sire_id, dam_id, milking_status as is_milking, if(in_calf=1,'Yes','No') as is_incalf, parity, if(farmer_id is null or farmer_id = 0, 'No', 'Yes') as is_active
         from cow
         where farmer_id = %d or old_farmer_id = %d
         """  % (farmer_id, farmer_id)
@@ -303,7 +303,7 @@ class Queries:
             # 'dam': Any(str, Length(min=3, max=15), msg="The dam name should be between 3-15 characters"),
             # 'sire': Any(str, Length(min=3, max=15), msg="The sire name should be between 3-15 characters"),
             'ear_tag': Any(str, Length(min=3, max=15), msg="The ear tag should be between 3-15 characters"),
-            Required('dob'): All(Match('^\d{4}\-\d{2}\-\d{2}$'), msg='Please add the DoB for the cow'),
+            Required('dob'): All(Match('^\d{4}\/\d{2}\/\d{2}$'), msg='Please add the DoB for the cow'),
             'parity': All(int, msg='Please specify the cow parity.'),
             Required('is_active'): All(str, Any('yes', 'no'), msg='Select whether the cow is active or not'),
             Required('sex'): All(str, Any('Male', 'Female'), msg='Specify the sex of the cow'),
@@ -342,6 +342,7 @@ class Queries:
             if(data["adult_milking"] == ''):
                 print('Expecting for all cows to have a milking status')
                 return 1
+        data['dob'] = data['dob'].replace('/', '-')
         return data
 
 
